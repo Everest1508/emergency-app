@@ -52,14 +52,14 @@ class LoginSerializer(serializers.Serializer):
         }
 
 
-class DriverRegisterSerializer(serializers.ModelSerializer):
+class DriverRegisterSerializer(serializers.ModelSerSeializer):
     confirm_password = serializers.CharField(write_only=True)
 
     class Meta:
         model = User
         fields = [
             'first_name', 'last_name', 'email', 'phone_number',
-            'license', 'ambulance_pic', 'driver_pic', 'password',"confirm_password"
+            'license', 'driver_pic', 'password',"confirm_password"
         ]
     def validate(self, data):
         if data['password'] != data['confirm_password']:

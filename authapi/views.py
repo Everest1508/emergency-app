@@ -6,7 +6,7 @@ from rest_framework.authtoken.models import Token
 from .serializers import RegisterSerializer, LoginSerializer,DriverRegisterSerializer,ResetPasswordSerializer
 from utils.response import data_response
 from utils.email import send_dynamic_email
-from .models import User,EmailGroupModel
+from .models import User,EmailGroupModel,CarPic
 from .utils import generate_unique_username
 from django.utils.crypto import get_random_string
 
@@ -266,11 +266,17 @@ class DriverRegisterAPIView(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request):
+        car_pics = request.data.getlist('car_pics',[])
+        if len(car_pics) == 0:
+            return Response(
+                data_response(400, "Bad Request", {"error": "Upload alteast one image"}),
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+            
         serializer = DriverRegisterSerializer(data=request.data)
         if serializer.is_valid():
             email = serializer.validated_data["email"]
             phone_number = serializer.validated_data["phone_number"]
-
             if User.objects.filter(email=email).exists():
                 return Response(
                     data_response(400, "Bad Request", {"error": "Email already exists"}),
@@ -285,6 +291,8 @@ class DriverRegisterAPIView(APIView):
             driver = serializer.save()
             driver.generate_verification_token()
             driver.save()
+            for car_pic in car_pics:
+                CarPic.objects.create(user = driver,image = car_pic)               
 
             try:
                 email_template = EmailGroupModel.objects.get(type="verification-driver")
@@ -318,7 +326,7 @@ class DriverRegisterAPIView(APIView):
             return Response(
                 data_response(
                     status.HTTP_201_CREATED,
-                    "Driver Registered Successfully. Admin will verify your email.",
+                    "Driver Registered Successfully. Admin will verify your profile.",
                     None,
                 ),
                 status=status.HTTP_201_CREATED,

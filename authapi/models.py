@@ -8,6 +8,12 @@ class User(AbstractUser):
         ('driver', 'Driver'),
         ('customer', 'Customer'),
     )
+    
+    CAR_TYPE_CHOICES = (
+        ('0','Ambulance'),
+        ('1','Police'),
+        ('2','Firebrigade'),
+    )
     user_type = models.CharField(
         max_length=10, choices=USER_TYPE_CHOICES, default='customer'
     )
@@ -16,12 +22,13 @@ class User(AbstractUser):
     verification_token = models.CharField(max_length=64, unique=True, null=True, blank=True)
     forget_token = models.CharField(max_length=64, unique=True, null=True, blank=True)
     license = models.CharField(max_length=100, null=True, blank=True)  # Driver license
-    ambulance_pic = models.ImageField(upload_to='ambulances/', null=True, blank=True)  # Ambulance picture
     driver_pic = models.ImageField(upload_to='drivers/', null=True, blank=True)  # Driver picture
+    type = models.CharField(choices = CAR_TYPE_CHOICES, max_length=50,null=True,blank=True)
 
     def generate_verification_token(self):
         self.verification_token = get_random_string(64)
         self.save()
+        
 
         
 class EmailGroupModel(models.Model):
@@ -33,3 +40,7 @@ class EmailGroupModel(models.Model):
     
     def __str__(self) -> str:
         return self.type
+    
+class CarPic(models.Model):
+    user = models.ForeignKey("authapi.User",  on_delete=models.CASCADE)
+    image = models.ImageField(upload_to='car/')
