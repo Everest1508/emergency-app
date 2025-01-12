@@ -52,7 +52,7 @@ class LoginSerializer(serializers.Serializer):
         }
 
 
-class DriverRegisterSerializer(serializers.ModelSerSeializer):
+class DriverRegisterSerializer(serializers.ModelSerializer):
     confirm_password = serializers.CharField(write_only=True)
 
     class Meta:
