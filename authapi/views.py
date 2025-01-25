@@ -3,7 +3,7 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.authtoken.models import Token
-from .serializers import RegisterSerializer, LoginSerializer,DriverRegisterSerializer,ResetPasswordSerializer
+from .serializers import RegisterSerializer, LoginSerializer,DriverRegisterSerializer,ResetPasswordSerializer, ProfileSerializer
 from utils.response import data_response
 from utils.email import send_dynamic_email
 from .models import User,EmailGroupModel,CarPic
@@ -75,7 +75,22 @@ class RegisterAPIView(APIView):
                 ),
                 status=status.HTTP_201_CREATED,
             )
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        error_list = []
+        for field, errors in serializer.errors.items():
+            for error in errors:
+                if error == "This field is required.":
+                    error_list.append(f"{field.replace('_', ' ').capitalize()} is required.")
+                else:
+                    error_list.append(error)
+
+        return Response(
+            data_response(
+                400,
+                "Bad Request",
+                {"errors": error_list},
+            ),
+            status=status.HTTP_400_BAD_REQUEST,
+        )
 
 class LoginAPIView(APIView):
     permission_classes = [AllowAny]
@@ -86,16 +101,36 @@ class LoginAPIView(APIView):
             user = serializer.validated_data["user"]
 
             token, _ = Token.objects.get_or_create(user=user)
+            print(user.first_name)
             return Response(
                 data_response(
                     status.HTTP_200_OK,
                     "Login Successful",
-                    {"token": token.key}
+                    {
+                        "token": token.key,
+                        "profile":ProfileSerializer(user).data
+                    }
                 ),
                 status=status.HTTP_200_OK,
             )
 
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        error_list = []
+        for field, errors in serializer.errors.items():
+            for error in errors:
+                if error == "This field is required.":
+                    error_list.append(f"{field.replace('_', ' ').capitalize()} is required.")
+                else:
+                    error_list.append(error)
+
+        return Response(
+            data_response(
+                400,
+                "Bad Request",
+                {"errors": error_list},
+            ),
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
 
 
 class VerifyEmailAPIView(APIView):
@@ -267,11 +302,11 @@ class DriverRegisterAPIView(APIView):
 
     def post(self, request):
         car_pics = request.data.getlist('car_pics',[])
-        if len(car_pics) == 0:
-            return Response(
-                data_response(400, "Bad Request", {"error": "Upload alteast one image"}),
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+        # if len(car_pics) == 0:
+        #     return Response(
+        #         data_response(400, "Bad Request", {"error": "Upload alteast one image"}),
+        #         status=status.HTTP_400_BAD_REQUEST,
+        #     )
             
         serializer = DriverRegisterSerializer(data=request.data)
         if serializer.is_valid():
@@ -331,4 +366,20 @@ class DriverRegisterAPIView(APIView):
                 ),
                 status=status.HTTP_201_CREATED,
             )
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            
+        error_list = []
+        for field, errors in serializer.errors.items():
+            for error in errors:
+                if error == "This field is required.":
+                    error_list.append(f"{field.replace('_', ' ').capitalize()} is required.")
+                else:
+                    error_list.append(error)
+
+        return Response(
+            data_response(
+                400,
+                "Bad Request",
+                {"errors": error_list},
+            ),
+            status=status.HTTP_400_BAD_REQUEST,
+        )

@@ -59,7 +59,7 @@ class DriverRegisterSerializer(serializers.ModelSerializer):
         model = User
         fields = [
             'first_name', 'last_name', 'email', 'phone_number',
-            'license', 'driver_pic', 'password',"confirm_password"
+            'license_pic', 'driver_pic', 'password',"confirm_password"
         ]
     def validate(self, data):
         if data['password'] != data['confirm_password']:
@@ -85,3 +85,9 @@ class ResetPasswordSerializer(serializers.Serializer):
         if data["new_password"] != data["confirm_password"]:
             raise serializers.ValidationError("Passwords do not match")
         return data
+
+
+class ProfileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ["first_name", "last_name","email","phone_number","user_type","license_pic","driver_pic","type"]

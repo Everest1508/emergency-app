@@ -21,9 +21,10 @@ class User(AbstractUser):
     is_verified = models.BooleanField(default=False)
     verification_token = models.CharField(max_length=64, unique=True, null=True, blank=True)
     forget_token = models.CharField(max_length=64, unique=True, null=True, blank=True)
-    license = models.CharField(max_length=100, null=True, blank=True)  # Driver license
+    license_pic = models.ImageField(upload_to='license/', null=True, blank=True)  # Driver license
     driver_pic = models.ImageField(upload_to='drivers/', null=True, blank=True)  # Driver picture
     type = models.CharField(choices = CAR_TYPE_CHOICES, max_length=50,null=True,blank=True)
+    remark = models.TextField(null=True,blank=True)
 
     def generate_verification_token(self):
         self.verification_token = get_random_string(64)
