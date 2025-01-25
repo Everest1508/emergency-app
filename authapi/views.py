@@ -9,7 +9,7 @@ from utils.email import send_dynamic_email
 from .models import User,EmailGroupModel,CarPic
 from .utils import generate_unique_username
 from django.utils.crypto import get_random_string
-
+from django.shortcuts import render,HttpResponse
 
 class RegisterAPIView(APIView):
     permission_classes = [AllowAny]
@@ -133,25 +133,35 @@ class LoginAPIView(APIView):
 
 
 
-class VerifyEmailAPIView(APIView):
-    permission_classes = [AllowAny]
+# class VerifyEmailAPIView(APIView):
+#     permission_classes = [AllowAny]
 
-    def get(self, request, token):
-        try:
-            user = User.objects.get(verification_token=token)
-            user.is_verified = True
-            user.verification_token = None
-            user.save()
+#     def get(self, request, token):
+#         try:
+#             user = User.objects.get(verification_token=token)
+#             user.is_verified = True
+#             user.verification_token = None
+#             user.save()
 
-            return Response(
-                data_response(status.HTTP_200_OK, "Email Verified Successfully", None),
-                status=status.HTTP_200_OK,
-            )
-        except User.DoesNotExist:
-            return Response(
-                data_response(status.HTTP_400_BAD_REQUEST, "Invalid token", None),
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+#             return Response(
+#                 data_response(status.HTTP_200_OK, "Email Verified Successfully", None),
+#                 status=status.HTTP_200_OK,
+#             )
+#         except User.DoesNotExist:
+#             return Response(
+#                 data_response(status.HTTP_400_BAD_REQUEST, "Invalid token", None),
+#                 status=status.HTTP_400_BAD_REQUEST,
+#             )
+
+def verify_account(request,token):
+    try:
+        user = User.objects.get(verification_token=token)
+        user.is_verified = True
+        user.verification_token = None
+        user.save()
+        return render(request=request,template_name="index.html")
+    except User.DoesNotExist:
+        return render(request=request,template_name="invalid_link.html")
 
 class ResendVerificationEmailAPIView(APIView):
     permission_classes = [AllowAny]
