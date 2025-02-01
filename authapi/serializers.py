@@ -58,7 +58,7 @@ class DriverRegisterSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = [
-            'first_name', 'last_name', 'email', 'phone_number',
+            'first_name', 'last_name', 'email', 'phone_number', "type",
             'license_pic', 'driver_pic', 'password',"confirm_password"
         ]
     def validate(self, data):
