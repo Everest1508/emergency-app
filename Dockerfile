@@ -1,16 +1,25 @@
-FROM python:3.9-slim
+# Use official Python image
+FROM python:3.12
 
-ENV PYTHONDONTWRITEBYTECODE 1
-ENV PYTHONUNBUFFERED 1
-
+# Set the working directory
 WORKDIR /app
 
-COPY requirements.txt /app/
+# Install system dependencies
+RUN apt-get update && apt-get install -y netcat-openbsd
 
+# Copy and install dependencies
+COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY . /app/
+# Copy the Django project
+COPY . .
 
+# Set environment variables
+ENV PYTHONUNBUFFERED=1 \
+    DJANGO_SETTINGS_MODULE=core.settings
+
+# Expose port for Daphne
 EXPOSE 8000
 
-CMD ["daphne", "-b", "0.0.0.0", "-p", "8001", "core.asgi.application"]
+# Run migrations and start Daphne server
+CMD ["sh", "-c", "python manage.py migrate && daphne -b 0.0.0.0 -p 8000 core.asgi:application"]

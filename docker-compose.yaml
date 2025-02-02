@@ -1,34 +1,21 @@
-version: '3.8'
-
 services:
-  db:
-    image: postgres:13
-    environment:
-      POSTGRES_DB: rapid
-      POSTGRES_USER: emergency
-      POSTGRES_PASSWORD: password
-    volumes:
-      - postgres_data:/var/lib/postgresql/data/
-    networks:
-      - django_network
-
   web:
     build: .
+    container_name: django_app
     command: daphne -b 0.0.0.0 -p 8000 core.asgi:application
     volumes:
       - .:/app
+    expose:
+      - 8000
     ports:
       - "8000:8000"
-    environment:
-      - DATABASE_URL=postgres://emergency:password@db:5432/rapid
+
+  nginx:
+    build:
+      context: .
+      dockerfile: Dockerfile.nginx
+    container_name: nginx_proxy
+    ports:
+      - "80:80"
     depends_on:
-      - db
-    networks:
-      - django_network
-
-volumes:
-  postgres_data:
-
-networks:
-  django_network:
-    driver: bridge
+      - web
