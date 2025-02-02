@@ -5,6 +5,8 @@ services:
     command: daphne -b 0.0.0.0 -p 8000 core.asgi:application
     volumes:
       - .:/app
+      - ./staticfiles:/app/staticfiles
+      - ./media:/app/media
     expose:
       - 8000
     ports:
