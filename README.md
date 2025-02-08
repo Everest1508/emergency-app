@@ -1,4 +1,4 @@
-To run this restart this container
+To restart this container
 ```
 docker compose restart django_web
 ```
