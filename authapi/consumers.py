@@ -4,6 +4,7 @@ from channels.db import database_sync_to_async
 from .models import User
 from rest_framework.authtoken.models import Token
 from .utils import get_key_from_cookies
+import urllib.parse
 
 class UserLocationConsumer(AsyncWebsocketConsumer):
     async def connect(self):
@@ -13,7 +14,8 @@ class UserLocationConsumer(AsyncWebsocketConsumer):
         - Validates the driver ID.
         - Adds the driver to a room group for real-time updates.
         """
-        token = get_key_from_cookies(scope=self.scope,key="token")
+        token = self.get_token_from_query_params()
+        print(token)
         url_user_id = self.scope['url_route']['kwargs']['user_id']
         
         if not token:
@@ -117,3 +119,11 @@ class UserLocationConsumer(AsyncWebsocketConsumer):
         # driver.is_available = False
         # driver.save()
         print("disconnected")
+        
+    def get_token_from_query_params(self):
+        """
+        Extracts the token from WebSocket query parameters.
+        """
+        query_string = self.scope.get('query_string', b'').decode('utf-8')
+        query_params = urllib.parse.parse_qs(query_string)
+        return query_params.get('token', [None])[0]
