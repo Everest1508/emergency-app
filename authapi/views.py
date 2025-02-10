@@ -132,7 +132,6 @@ class LoginAPIView(APIView):
         )
 
 
-
 # class VerifyEmailAPIView(APIView):
 #     permission_classes = [AllowAny]
 

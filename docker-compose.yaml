@@ -11,6 +11,22 @@ services:
       - 8000
     ports:
       - "8000:8000"
+    depends_on:
+      - redis
+    networks:
+      - backend
+
+  redis:
+    image: redis:alpine
+    container_name: redis_server
+    restart: always
+    expose: 
+      - 6380
+      - 6379
+    ports:
+      - "6380:6379"
+    networks:
+      - backend
 
   nginx:
     build:
@@ -24,3 +40,12 @@ services:
     volumes:
       - ./staticfiles:/app/staticfiles
       - ./media:/app/media
+    networks:
+      - backend
+
+volumes:
+  redis_data:
+
+networks:
+  backend:
+    driver: bridge
