@@ -91,3 +91,69 @@ class CustomerCarRequestView(APIView):
                     },
                 },
             )
+
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.views import APIView
+from rest_framework import status
+from orders.models import CustomerRequest
+from utils.response import data_response
+from channels.layers import get_channel_layer
+from asgiref.sync import async_to_sync
+
+class DriverAcceptRequestView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, request_id):
+        driver = request.user
+
+        # Ensure only drivers can accept requests
+        if driver.user_type != 'driver':
+            return Response(
+                data_response(403, "Only drivers can accept requests.", {}),
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        try:
+            car_request = CustomerRequest.objects.get(id=request_id, status="pending")
+        except CustomerRequest.DoesNotExist:
+            return Response(
+                data_response(404, "Request not found or already accepted.", {}),
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        # Assign driver to the request
+        car_request.driver = driver
+        car_request.status = "in_progress"
+        car_request.save()
+
+        # Notify the customer via WebSocket
+        self.notify_customer(car_request)
+
+        return Response(
+            data_response(200, "Request accepted successfully.", {}),
+            status=status.HTTP_200_OK
+        )
+
+    def notify_customer(self, car_request):
+        """
+        Sends a WebSocket event to notify the customer when a driver accepts their request.
+        """
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(
+            f"user_{car_request.customer.username}",
+            {
+                "type": "order_accepted_event",
+                "event": "update",
+                "id": car_request.id,
+                "status": car_request.status,
+                "driver": {
+                    "name": car_request.driver.username,
+                    "phone": str(car_request.driver.phone_number),
+                },
+                "location": {
+                    "lat": float(car_request.latitude),
+                    "lon": float(car_request.longitude),
+                },
+            },
+        )

@@ -111,6 +111,12 @@ class UserLocationConsumer(AsyncWebsocketConsumer):
         """
         await self.send(text_data=json.dumps(event))
         
+    async def order_accepted_event(self, event):
+        """
+        Handles user update event when driver accepts request.
+        """
+        await self.send(text_data=json.dumps(event))
+        
     @database_sync_to_async
     def authenticate_user(self, user_id,token):
         try:
