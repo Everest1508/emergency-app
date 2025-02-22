@@ -17,8 +17,8 @@ class CustomerRequest(models.Model):
     driver = models.ForeignKey("authapi.User", on_delete=models.CASCADE, related_name="driver", blank=True, null=True)
     request_type = models.CharField(max_length=50, choices=REQUEST_TYPES)
     status = models.CharField(max_length=50, choices=STATUS_CHOICES, default='pending')
-    latitude = models.DecimalField(max_digits=9, decimal_places=10)
-    longitude = models.DecimalField(max_digits=9, decimal_places=10)
+    latitude = models.DecimalField(max_digits=10, decimal_places=10)
+    longitude = models.DecimalField(max_digits=10, decimal_places=10)
     timestamp = models.DateTimeField(auto_now_add=True)
     additional_details = models.TextField(blank=True, null=True)
     
