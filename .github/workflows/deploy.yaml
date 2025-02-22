@@ -27,5 +27,6 @@ jobs:
             cd /home/ubuntu/emergency-app
             git pull origin main
             sudo docker compose up --build -d
+            sudo docker exec django_app python manage.py makemigrations
             sudo docker exec django_app python manage.py migrate
           EOF
