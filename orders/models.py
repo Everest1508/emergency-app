@@ -17,10 +17,10 @@ class CustomerRequest(models.Model):
     driver = models.ForeignKey("authapi.User", on_delete=models.CASCADE, related_name="driver", blank=True, null=True)
     request_type = models.CharField(max_length=50, choices=REQUEST_TYPES)
     status = models.CharField(max_length=50, choices=STATUS_CHOICES, default='pending')
-    latitude = models.DecimalField(max_digits=10, decimal_places=10)
-    longitude = models.DecimalField(max_digits=10, decimal_places=10)
+    latitude = models.FloatField()
+    longitude = models.FloatField()
     timestamp = models.DateTimeField(auto_now_add=True)
     additional_details = models.TextField(blank=True, null=True)
     
     def __str__(self):
-        return f"Request from {self.customer_name} ({self.request_type}) - {self.status}"
+        return f"Request from {self.customer} ({self.request_type}) - {self.status}"
