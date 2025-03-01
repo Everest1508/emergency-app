@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # Step 1: Checkout the code from the repo
+      # Step 1: Checkout the code
       - name: Checkout code
         uses: actions/checkout@v3
 
@@ -24,9 +24,27 @@ jobs:
       - name: Deploy to EC2
         run: |
           ssh -o StrictHostKeyChecking=no -i ec2-key.pem ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
+            set -e  # Exit on any error
+
             cd /home/ubuntu/emergency-app
+
+            # Fetch latest code
             git pull origin main
-            sudo docker compose up --build -d
+            
+            # Stop and remove only the existing containers (keeps volumes & networks intact)
+            sudo docker compose down --remove-orphans
+
+            # Remove old/unused Docker images
+            sudo docker image prune -f
+
+            # Build and start the services without unnecessary rebuilds
+            sudo docker compose up -d --build --remove-orphans
+
+            # Run Django migrations
             sudo docker exec django_app python manage.py makemigrations
             sudo docker exec django_app python manage.py migrate
+            
+            # Cleanup old containers (if any)
+            sudo docker container prune -f
+
           EOF
