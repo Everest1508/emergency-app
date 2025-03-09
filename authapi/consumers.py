@@ -67,11 +67,6 @@ class UserLocationConsumer(AsyncWebsocketConsumer):
         print(f'Driver disconnected. Close code: {close_code}')
 
     async def receive(self, text_data):
-        """
-        Handles incoming WebSocket messages.
-        - Updates the driver's location in the database.
-        - Broadcasts the new location to the room group.
-        """
         try:
             data = json.loads(text_data)
             latitude = data.get('latitude')
@@ -80,41 +75,65 @@ class UserLocationConsumer(AsyncWebsocketConsumer):
             if latitude is None or longitude is None:
                 raise ValueError("Latitude and longitude are required.")
 
-            # Step 1: Update the driver's location in the database
             await self.update_user_location(self.user.username, latitude, longitude, self.user.user_type)
 
-            # Step 2: Broadcast the new location to the room group
-            await self.channel_layer.group_send(
-                self.room_user,
-                {
-                    'type': 'location_update',
-                    'latitude': latitude,
-                    'longitude': longitude,
-                }
-            )
+            if self.user.user_type == "driver":
+                customer_username = redis_client.get(f"{self.user.username}_has_customer")
+                if customer_username:
+                    await self.send_location_update(customer_username, latitude, longitude, "driver")
+            elif self.user.user_type == "customer":
+                driver_list = redis_client.get(f"{self.user.username}_has_driver")
+                if driver_list:
+                    for driver in json.loads(driver_list):
+                        await self.send_location_update(driver, latitude, longitude, "customer")
         except Exception as e:
-            print(f'Error processing message: {e}')
             await self.send(text_data=json.dumps({'error': str(e)}))
+
+    async def send_location_update(self, username, latitude, longitude, sender_type):
+        await self.channel_layer.group_send(
+            f"user_{username}",
+            {
+                'type': 'location_update',
+                'latitude': latitude,
+                'longitude': longitude,
+                'from': sender_type,
+                "username": self.user.username
+            }
+        )
 
     async def location_update(self, event):
         """
         Sends location updates to the WebSocket client.
         """
-        await self.send(text_data=json.dumps({
-            'latitude': event['latitude'],
-            'longitude': event['longitude'],
-        }))
+        await self.send(text_data=json.dumps(event))
+
     
     async def new_booking_event(self, event):
         """
         Handles new car request events and sends them to drivers.
         """
         await self.send(text_data=json.dumps(event))
+    
+    async def update_booking_event(self, event):
+        """
+        Handles update car request events and sends to other drivers.
+        """
+        await self.send(text_data=json.dumps(event))
         
     async def order_accepted_event(self, event):
-        """
-        Handles user update event when driver accepts request.
-        """
+        driver_username = event['driver']['username']
+        customer_username = event['customer']['username']
+
+        existing_drivers = redis_client.get(f"{customer_username}_has_driver")
+        if existing_drivers:
+            drivers_list = json.loads(existing_drivers)
+            drivers_list.append(driver_username)
+            redis_client.set(f"{customer_username}_has_driver", json.dumps(drivers_list))
+        else:
+            redis_client.set(f"{customer_username}_has_driver", json.dumps([driver_username]))
+        
+        redis_client.set(f"{driver_username}_has_customer", customer_username)
+
         await self.send(text_data=json.dumps(event))
         
     @database_sync_to_async

@@ -30,7 +30,9 @@ class User(AbstractUser):
     def generate_verification_token(self):
         self.verification_token = get_random_string(64)
         self.save()
-        
+    
+    def __str__(self):
+        return super().__str__() + " " + self.user_type
 
         
 class EmailGroupModel(models.Model):
