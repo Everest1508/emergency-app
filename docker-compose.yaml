@@ -28,20 +28,20 @@ services:
     networks:
       - backend
 
-  # nginx:
-  #   build:
-  #     context: .
-  #     dockerfile: Dockerfile.nginx
-  #   container_name: nginx_proxy
-  #   ports:
-  #     - "80:80"
-  #   depends_on:
-  #     - web
-  #   volumes:
-  #     - ./staticfiles:/app/staticfiles
-  #     - ./media:/app/media
-  #   networks:
-  #     - backend
+  nginx:
+    build:
+      context: .
+      dockerfile: Dockerfile.nginx
+    container_name: nginx_proxy
+    ports:
+      - "80:80"
+    depends_on:
+      - web
+    volumes:
+      - ./staticfiles:/app/staticfiles
+      - ./media:/app/media
+    networks:
+      - backend
 
 volumes:
   redis_data:
