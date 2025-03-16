@@ -222,39 +222,50 @@ class CompleteCarRequestView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request, request_id):
-        driver = request.user
+        customer = request.user
 
-        if driver.user_type != 'driver':
+        if customer.user_type != 'customer':
             return Response(
-                data_response(403, "Only drivers can complete requests.", {}),
+                data_response(403, "Only Customers can complete requests.", {}),
                 status=status.HTTP_403_FORBIDDEN
             )
 
         try:
-            car_request = CustomerRequest.objects.get(id=request_id, driver=driver, status="in_progress")
+            car_request = CustomerRequest.objects.get(id=request_id, customer=customer, status="in_progress")
         except CustomerRequest.DoesNotExist:
             return Response(
                 data_response(404, "Request not found or not assigned to you.", {}),
                 status=status.HTTP_404_NOT_FOUND
             )
 
-        provided_otp = request.data.get("otp")
+        # provided_otp = request.data.get("otp")
 
-        if str(provided_otp) != car_request.otp:
-            return Response(
-                data_response(400, "Invalid OTP provided.", {}),
-                status=status.HTTP_400_BAD_REQUEST
-            )
+        # if str(provided_otp) != car_request.otp:
+        #     return Response(
+        #         data_response(400, "Invalid OTP provided.", {}),
+        #         status=status.HTTP_400_BAD_REQUEST
+        #     )
 
         car_request.status = "completed"
         car_request.save()
 
-        redis_client.delete(f"{driver.username}_has_customer")
+        redis_client.delete(f"{car_request.driver.username}_has_customer")
         redis_client.delete(f"{car_request.customer.username}_has_driver")
 
         channel_layer = get_channel_layer()
         async_to_sync(channel_layer.group_send)(
             f"user_{car_request.customer.username}",
+            {
+                "type": "order_completed_event",
+                "event": "completed",
+                "id": car_request.id,
+                "status": "completed"
+            }
+        )
+
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(
+            f"driver_{car_request.customer.username}",
             {
                 "type": "order_completed_event",
                 "event": "completed",
@@ -290,3 +301,66 @@ class CarRequestListView(APIView):
             response_data.append(request_data)
         
         return Response(data_response(200, "Car requests retrieved successfully.", response_data), status=status.HTTP_200_OK)
+    
+
+class CancelCarRequestView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, request_id):
+        user = request.user
+
+        try:
+            car_request = CustomerRequest.objects.get(id=request_id, customer=user)
+        except CustomerRequest.DoesNotExist:
+            return Response(
+                data_response(404, "Request not found or not authorized to cancel.", {}),
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        if car_request.status not in ["pending", "in_progress"]:
+            return Response(
+                data_response(400, "Only pending or in-progress requests can be canceled.", {}),
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        car_request.status = "canceled"
+        car_request.save()
+
+        # Delete request-driver mappings
+        CustomerRequestDriverMapping.objects.filter(request=car_request).delete()
+
+        # Notify assigned driver if exists
+        if car_request.driver:
+            self.notify_driver(car_request)
+
+        # Notify customer
+        self.notify_customer(car_request)
+
+        return Response(
+            data_response(200, "Request canceled successfully.", {}),
+            status=status.HTTP_200_OK
+        )
+
+    def notify_driver(self, car_request):
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(
+            f"user_{car_request.driver.username}",
+            {
+                "type": "update_booking_event",
+                "event": "canceled",
+                "id": car_request.id,
+                "status": "canceled",
+            },
+        )
+
+    def notify_customer(self, car_request):
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(
+            f"user_{car_request.customer.username}",
+            {
+                "type": "order_canceled_event",
+                "event": "canceled",
+                "id": car_request.id,
+                "status": "canceled",
+            },
+        )

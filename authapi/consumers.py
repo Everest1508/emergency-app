@@ -119,6 +119,18 @@ class UserLocationConsumer(AsyncWebsocketConsumer):
         Handles update car request events and sends to other drivers.
         """
         await self.send(text_data=json.dumps(event))
+    
+    async def order_canceled_event(self, event):
+        """
+        Handles order canceled events and sends them to drivers
+        """
+        await self.send(text_data=json.dumps(event))
+    
+    async def order_completed_event(self, event):
+        """
+        Handles order canceled events and sends them to drivers
+        """
+        await self.send(text_data=json.dumps(event))
         
     async def order_accepted_event(self, event):
         driver_username = event['driver']['username']
