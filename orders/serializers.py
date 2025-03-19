@@ -5,4 +5,4 @@ from .models import CustomerRequest
 class CustomerRequestSerializer(serializers.ModelSerializer):
     class Meta:
         model = CustomerRequest
-        fields = ['customer', 'request_type', 'latitude', 'longitude', 'additional_details']
+        fields = ['id','customer', 'request_type', 'latitude', 'longitude', 'additional_details']
