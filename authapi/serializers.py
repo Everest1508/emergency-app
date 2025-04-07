@@ -30,6 +30,7 @@ class RegisterSerializer(serializers.ModelSerializer):
 class LoginSerializer(serializers.Serializer):
     phone_number = serializers.CharField()
     password = serializers.CharField(write_only=True)
+    device_id = serializers.CharField(required=False)
 
     def validate(self, data):
         phone_number = data["phone_number"]
@@ -45,6 +46,9 @@ class LoginSerializer(serializers.Serializer):
 
         if not user.is_verified:
             raise serializers.ValidationError("Email not verified")
+        
+        user.device_id = data.get("device_id")
+        user.save()
 
         return {
             "user": user,
