@@ -265,7 +265,7 @@ class CompleteCarRequestView(APIView):
 
         channel_layer = get_channel_layer()
         async_to_sync(channel_layer.group_send)(
-            f"driver_{car_request.customer.username}",
+            f"user_{car_request.driver.username}",
             {
                 "type": "order_completed_event",
                 "event": "completed",
