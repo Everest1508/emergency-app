@@ -332,6 +332,7 @@ class CancelCarRequestView(APIView):
         # Notify assigned driver if exists
         if car_request.driver:
             self.notify_driver(car_request)
+        self.notify_other_drivers(car_request)
 
         # Notify customer
         self.notify_customer(car_request)
@@ -363,4 +364,52 @@ class CancelCarRequestView(APIView):
                 "id": car_request.id,
                 "status": "canceled",
             },
+        )
+    
+    def notify_other_drivers(self, car_request):
+        """
+        Sends a WebSocket event to notify all other drivers that the request has been accepted.
+        """
+        channel_layer = get_channel_layer()
+
+        # Get all drivers who received this request except the accepted driver
+        other_drivers = CustomerRequestDriverMapping.objects.filter(request=car_request).exclude(driver=car_request.driver)
+
+        for mapping in other_drivers:
+            async_to_sync(channel_layer.group_send)(
+                f"user_{mapping.driver.username}",
+                {
+                    "type": "update_booking_event",
+                    "event": "update",
+                    "id": car_request.id,
+                    "status": "ignored",
+                },
+            )
+
+
+class PendingRequestsForDriverView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        driver = request.user
+
+        if driver.user_type != 'driver':
+            return Response(
+                data_response(403, "Only drivers can access this."), 
+                status=403
+            )
+
+        # Get all pending requests mapped to this driver
+        pending_mappings = CustomerRequestDriverMapping.objects.filter(
+            driver=driver,
+            status='pending',  # mapping is still open
+            request__status='pending'  # customer request is also pending
+        ).select_related('request')
+
+        pending_requests = [mapping.request for mapping in pending_mappings]
+        serializer = CustomerRequestSerializer(pending_requests, many=True)
+
+        return Response(
+            data_response(200, "Pending requests for driver fetched successfully.", serializer.data),
+            status=200
         )

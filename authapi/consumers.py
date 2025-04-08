@@ -61,8 +61,9 @@ class UserLocationConsumer(AsyncWebsocketConsumer):
 
         if self.user.user_type == 'driver':
             await self.mark_user_offline(self.user.username)
-        
-        self.remove_driver_from_redis(self.user.username, self.user.user_type)
+
+        # This is turned off for now        
+        # self.remove_driver_from_redis(self.user.username, self.user.user_type)
 
         print(f'Driver disconnected. Close code: {close_code}')
 
