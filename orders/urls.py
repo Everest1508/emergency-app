@@ -10,7 +10,7 @@ urlpatterns = [
     path("car-requests/", CarRequestListView.as_view(), name="car_requests_list"),
     path("car-requests/<int:request_id>/complete/", CompleteCarRequestView.as_view(), name="complete_car_request"),
     path("car-requests/<int:request_id>/cancel/", CancelCarRequestView.as_view(), name="cancel_car_request"),
-    path('driver/pending-requests/', PendingRequestsForDriverView.as_view(), name='driver-pending-requests'),
+    path('car-requests/pending-requests/', PendingRequestsForDriverView.as_view(), name='driver-pending-requests'),
 ]
 
 
