@@ -11,6 +11,7 @@ from django.conf import settings
 from utils.response import data_response
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
+from utils.notifications import send_expo_notification
 
 redis_client = redis.Redis.from_url(settings.REDIS_URL, decode_responses=True)
 
@@ -82,13 +83,17 @@ class CustomerCarRequestView(APIView):
         channel_layer = get_channel_layer()
         request_type_dict = dict(CustomerRequest.REQUEST_TYPES)
         request_type_name = request_type_dict.get(request_type, "Unknown")
+        fcm_tokens = []
 
         for driver_username in nearby_drivers:
             try:
                 driver = User.objects.get(username=driver_username)
                 if send_request_to == 'type' and driver.car_type != car_request.car_type:
                     continue
-                
+                if driver.device_id:
+                    fcm_tokens.append(driver.device_id)
+                    
+                fcm_tokens.append(driver.fcm_token)
                 CustomerRequestDriverMapping.objects.create(request=car_request, driver=driver)
             except User.DoesNotExist:
                 continue
@@ -109,6 +114,33 @@ class CustomerCarRequestView(APIView):
                         "additional_details": car_request.additional_details or "",
                     },
                 },
+            )
+            send_expo_notification(
+                to=fcm_tokens,
+                title=f'{car_request.car_type.get_car_type_display()} needed!',
+                body=f"{car_request.car_type.get_car_type_display()} request from {car_request.customer.username}",
+                data={
+                    "request_id": car_request.id,
+                    "request_type": request_type_name,
+                    "location": {"lat": float(latitude), "lon": float(longitude)},
+                    "status": car_request.status,
+                    "timestamp": car_request.timestamp.strftime("%Y-%m-%d %H:%M:%S"),
+                    "additional_details": car_request.additional_details or "",
+                }
+            )
+
+            send_expo_notification(
+                to='ExponentPushToken[rWOklPGwybwk7n0CwtCF5d]',
+                title=f'{car_request.car_type.get_car_type_display()} needed!',
+                body=f"{car_request.car_type.get_car_type_display()} request from {car_request.customer.username}",
+                data={
+                    "request_id": car_request.id,
+                    "request_type": request_type_name,
+                    "location": {"lat": float(latitude), "lon": float(longitude)},
+                    "status": car_request.status,
+                    "timestamp": car_request.timestamp.strftime("%Y-%m-%d %H:%M:%S"),
+                    "additional_details": car_request.additional_details or "",
+                }
             )
 
 
@@ -196,6 +228,20 @@ class DriverAcceptRequestView(APIView):
                 }
             },
         )
+
+        send_expo_notification(
+            to=car_request.customer.device_id,
+            title=f'Request Accepted',
+            body=f"{car_request.car_type.get_car_type_display()} request accepted by {car_request.driver.get_full_name()}",
+        )
+
+        send_expo_notification(
+            to='ExponentPushToken[rWOklPGwybwk7n0CwtCF5d]',
+            title=f'Request Accepted',
+            body=f"{car_request.car_type.get_car_type_display()} request accepted by {car_request.driver.get_full_name()}",
+        )
+
+        
 
 
     def notify_other_drivers(self, car_request):
