@@ -93,7 +93,6 @@ class CustomerCarRequestView(APIView):
                 if driver.device_id:
                     fcm_tokens.append(driver.device_id)
                     
-                fcm_tokens.append(driver.fcm_token)
                 CustomerRequestDriverMapping.objects.create(request=car_request, driver=driver)
             except User.DoesNotExist:
                 continue
@@ -106,7 +105,7 @@ class CustomerCarRequestView(APIView):
                     "id": car_request.id,
                     "booking_type": "booking",
                     "data": {
-                        "user": {"name": car_request.customer.username, "phone": str(car_request.customer.phone_number)},
+                        "user": {"name": car_request.customer.get_full_name(), "phone": str(car_request.customer.phone_number)},
                         "request_type": request_type_name, 
                         "location": {"lat": float(latitude), "lon": float(longitude)},
                         "status": car_request.status,
@@ -117,22 +116,8 @@ class CustomerCarRequestView(APIView):
             )
             send_expo_notification(
                 to=fcm_tokens,
-                title=f'{car_request.car_type.get_car_type_display()} needed!',
-                body=f"{car_request.car_type.get_car_type_display()} request from {car_request.customer.username}",
-                data={
-                    "request_id": car_request.id,
-                    "request_type": request_type_name,
-                    "location": {"lat": float(latitude), "lon": float(longitude)},
-                    "status": car_request.status,
-                    "timestamp": car_request.timestamp.strftime("%Y-%m-%d %H:%M:%S"),
-                    "additional_details": car_request.additional_details or "",
-                }
-            )
-
-            send_expo_notification(
-                to='ExponentPushToken[rWOklPGwybwk7n0CwtCF5d]',
-                title=f'{car_request.car_type.get_car_type_display()} needed!',
-                body=f"{car_request.car_type.get_car_type_display()} request from {car_request.customer.username}",
+                title=f'{car_request.get_request_type_display()} needed!',
+                body=f"{car_request.get_request_type_display()} request from {car_request.customer.get_full_name()}",
                 data={
                     "request_id": car_request.id,
                     "request_type": request_type_name,
@@ -232,15 +217,8 @@ class DriverAcceptRequestView(APIView):
         send_expo_notification(
             to=car_request.customer.device_id,
             title=f'Request Accepted',
-            body=f"{car_request.car_type.get_car_type_display()} request accepted by {car_request.driver.get_full_name()}",
+            body=f"{car_request.get_request_type_display()} request accepted by {car_request.driver.get_full_name()}",
         )
-
-        send_expo_notification(
-            to='ExponentPushToken[rWOklPGwybwk7n0CwtCF5d]',
-            title=f'Request Accepted',
-            body=f"{car_request.car_type.get_car_type_display()} request accepted by {car_request.driver.get_full_name()}",
-        )
-
         
 
 

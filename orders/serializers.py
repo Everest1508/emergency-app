@@ -6,7 +6,7 @@ class CustomerRequestSerializer(serializers.ModelSerializer):
     user = serializers.SerializerMethodField()
     class Meta:
         model = CustomerRequest
-        fields = ['id','user', 'request_type', 'latitude', 'longitude', 'additional_details']
+        fields = ['id','user', 'customer', 'request_type', 'latitude', 'longitude', 'additional_details']
     
     def get_user(self, obj):
         return {
