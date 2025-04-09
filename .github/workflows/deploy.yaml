@@ -10,27 +10,6 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # Step 0: Clean up disk before build
-      - name: Free Disk Space on EC2
-        run: |
-          ssh -o StrictHostKeyChecking=no -i ec2-key.pem ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
-            echo "🧹 Cleaning disk to prevent OSError 28..."
-
-            # Remove Docker system clutter
-            sudo docker system prune -af --volumes
-
-            # Remove apt cache
-            sudo apt-get clean
-
-            # Clean up old log files
-            sudo journalctl --vacuum-time=2d
-            sudo find /var/log -type f -name "*.log" -delete || true
-
-            # Show remaining disk space
-            df -h /
-
-          EOF
-
 
       # Step 1: Checkout the code
       - name: Checkout code
@@ -47,6 +26,18 @@ jobs:
         run: |
           ssh -o StrictHostKeyChecking=no -i ec2-key.pem ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
             set -e  # Exit on any error
+
+            sudo docker system prune -af --volumes
+
+            # Remove apt cache
+            sudo apt-get clean
+
+            # Clean up old log files
+            sudo journalctl --vacuum-time=2d
+            sudo find /var/log -type f -name "*.log" -delete || true
+
+            # Show remaining disk space
+            df -h /
 
             cd /home/ubuntu/emergency-app
 
