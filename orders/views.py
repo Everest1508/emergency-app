@@ -402,8 +402,8 @@ class PendingRequestsForDriverView(APIView):
         # Get all pending requests mapped to this driver
         pending_mappings = CustomerRequestDriverMapping.objects.filter(
             driver=driver,
-            status='pending',  # mapping is still open
-            request__status='pending'  # customer request is also pending
+            status='pending',
+            request__status='pending'
         ).select_related('request')
 
         pending_requests = [mapping.request for mapping in pending_mappings]
