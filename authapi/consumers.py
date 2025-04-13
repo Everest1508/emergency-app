@@ -59,8 +59,8 @@ class UserLocationConsumer(AsyncWebsocketConsumer):
         if hasattr(self, 'room_customers'):
             await self.channel_layer.group_discard(self.room_customers, self.channel_name)
 
-        if self.user.user_type == 'driver':
-            await self.mark_user_offline(self.user.username)
+        # if self.user.user_type == 'driver':
+        #     await self.mark_user_offline(self.user.username)
 
         # This is turned off for now        
         # self.remove_driver_from_redis(self.user.username, self.user.user_type)

@@ -351,7 +351,7 @@ class CancelCarRequestView(APIView):
         car_request.save()
 
         # Delete request-driver mappings
-        CustomerRequestDriverMapping.objects.filter(request=car_request).delete()
+        CustomerRequestDriverMapping.objects.filter(request=car_request)
 
         # Notify assigned driver if exists
         if car_request.driver:
