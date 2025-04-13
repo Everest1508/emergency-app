@@ -28,6 +28,7 @@ services:
     networks:
       - backend
 
+
   nginx:
     build:
       context: .
@@ -42,6 +43,7 @@ services:
       - ./media:/app/media
     networks:
       - backend
+
 
 volumes:
   redis_data:
