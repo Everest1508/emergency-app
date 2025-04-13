@@ -356,6 +356,7 @@ class CancelCarRequestView(APIView):
         # Notify assigned driver if exists
         if car_request.driver:
             self.notify_driver(car_request)
+
         self.notify_other_drivers(car_request)
 
         # Notify customer
@@ -428,7 +429,7 @@ class PendingRequestsForDriverView(APIView):
 
         if driver.user_type != 'driver':
             return Response(
-                data_response(403, "Only drivers can access this."), 
+                data_response(403, "Only drivers can access this.", {}), 
                 status=403
             )
 
