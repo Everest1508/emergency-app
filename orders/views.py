@@ -415,6 +415,15 @@ class PendingRequestsForDriverView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
+        size = request.query_params.get("size")
+        if size:
+            try:
+                size = int(size)
+            except ValueError:
+                size = 10
+        
+        size = 10
+
         driver = request.user
 
         if driver.user_type != 'driver':
@@ -431,7 +440,7 @@ class PendingRequestsForDriverView(APIView):
         ).select_related('request')
 
         pending_requests = [mapping.request for mapping in pending_mappings]
-        serializer = CustomerRequestSerializer(pending_requests, many=True)
+        serializer = CustomerRequestSerializer(pending_requests[:size], many=True)
 
         return Response(
             data_response(200, "Pending requests for driver fetched successfully.", serializer.data),
