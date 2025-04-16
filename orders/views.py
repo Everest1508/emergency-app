@@ -311,9 +311,9 @@ class CarRequestListView(APIView):
         status_filter = request.query_params.get("status")
         
         if request.user.user_type == "driver":
-            car_requests = CustomerRequest.objects.filter(driver=request.user).values()
+            car_requests = CustomerRequest.objects.filter(driver=request.user).prefetch_related("driver").values()
         else:
-            car_requests = CustomerRequest.objects.filter(customer=request.user).values()
+            car_requests = CustomerRequest.objects.filter(customer=request.user).prefetch_related("driver").values()
         
         car_requests = car_requests.order_by("-timestamp")
         
@@ -332,6 +332,13 @@ class CarRequestListView(APIView):
         
         if response_data:
             response_requests = response_data[0]
+            response_requests["driver"] = {
+                    "username": response_data[0].username,
+                    "name": response_data[0].get_full_name(),
+                    "phone": str(response_data[0].phone_number),
+                    "car_type": response_data[0].get_type_display(),
+                    "profile_pic": response_data[0].driver_pic.url if response_data[0].driver_pic else None,
+                }
             
         
         return Response(data_response(200, "Car requests retrieved successfully.", {"user_state":user_state,"requests": response_requests}), status=status.HTTP_200_OK)
