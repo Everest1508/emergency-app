@@ -328,8 +328,13 @@ class CarRequestListView(APIView):
                 request_data.pop("otp", None)  
             response_data.append(request_data)
         
+        response_requests = {}
         
-        return Response(data_response(200, "Car requests retrieved successfully.", {"user_state":user_state,"requests": response_data[0] if response_data is not None else None}), status=status.HTTP_200_OK)
+        if response_data:
+            response_requests = response_data[0]
+            
+        
+        return Response(data_response(200, "Car requests retrieved successfully.", {"user_state":user_state,"requests": response_requests}), status=status.HTTP_200_OK)
     
 
 class CancelCarRequestView(APIView):
