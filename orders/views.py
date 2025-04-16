@@ -315,6 +315,8 @@ class CarRequestListView(APIView):
         else:
             car_requests = CustomerRequest.objects.filter(customer=request.user).values()
         
+        car_requests = car_requests.order_by("-timestamp")
+        
         user_state = car_requests[0]["status"] if car_requests else None
         
         if status_filter:
