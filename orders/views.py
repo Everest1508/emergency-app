@@ -333,11 +333,11 @@ class CarRequestListView(APIView):
         if response_data:
             response_requests = response_data[0]
             response_requests["driver"] = {
-                    "username": response_data[0].username,
-                    "name": response_data[0].get_full_name(),
-                    "phone": str(response_data[0].phone_number),
-                    "car_type": response_data[0].get_type_display(),
-                    "profile_pic": response_data[0].driver_pic.url if response_data[0].driver_pic else None,
+                    "username": response_data[0].driver.username,
+                    "name": response_data[0].driver.get_full_name(),
+                    "phone": str(response_data[0].driver.phone_number),
+                    "car_type": response_data[0].driver.get_type_display(),
+                    "profile_pic": response_data[0].driver.driver_pic.url if response_data[0].driver.driver_pic else None,
                 }
             
         
