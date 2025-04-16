@@ -311,9 +311,9 @@ class CarRequestListView(APIView):
         status_filter = request.query_params.get("status")
         
         if request.user.user_type == "driver":
-            car_requests = CustomerRequest.objects.filter(driver=request.user).prefetch_related("driver").values()
+            car_requests = CustomerRequest.objects.filter(driver=request.user).prefetch_related("driver")
         else:
-            car_requests = CustomerRequest.objects.filter(customer=request.user).prefetch_related("driver").values()
+            car_requests = CustomerRequest.objects.filter(customer=request.user).prefetch_related("driver")
         
         car_requests = car_requests.order_by("-timestamp")
         
@@ -331,17 +331,32 @@ class CarRequestListView(APIView):
         response_requests = {}
         
         if response_data:
-            response_requests = response_data[0]
-            response_requests["driver"] = {
-                    "username": response_data[0].driver.username,
-                    "name": response_data[0].driver.get_full_name(),
-                    "phone": str(response_data[0].driver.phone_number),
-                    "car_type": response_data[0].driver.get_type_display(),
-                    "profile_pic": response_data[0].driver.driver_pic.url if response_data[0].driver.driver_pic else None,
+            req = response_data[0]
+            driver_data = {
+                    "username": req.driver.username,
+                    "name": req.driver.get_full_name(),
+                    "phone": str(req.driver.phone_number),
+                    "car_type": req.driver.get_type_display(),
+                    "profile_pic": req.driver.driver_pic.url if req.driver.driver_pic else None,
                 }
+            req_data = {
+                "id": req.id,
+                "request_type": req.request_type,
+                "status": req.status,
+                "latitude": req.latitude,
+                "longitude": req.longitude,
+                "timestamp": req.timestamp,
+                "additional_details": req.additional_details,
+                "driver": driver_data,
+                "customer": {
+                    "username": req.customer.username,
+                    "name": req.customer.get_full_name(),
+                    "phone": str(req.customer.phone_number)
+                }
+            }
             
         
-        return Response(data_response(200, "Car requests retrieved successfully.", {"user_state":user_state,"requests": response_requests}), status=status.HTTP_200_OK)
+        return Response(data_response(200, "Car requests retrieved successfully.", {"user_state":user_state,"requests": req_data}), status=status.HTTP_200_OK)
     
 
 class CancelCarRequestView(APIView):
