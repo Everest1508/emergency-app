@@ -39,13 +39,14 @@ class User(AbstractUser):
     )
 
     def save(self, *args, **kwargs):
-        if self.verification_status == "email_ready" and not self.remark:
-            send_verified_email_to_user(self)
-            self.verification_status = "email_sent"
+        if self.user_type == "driver":
+            if self.verification_status == "email_ready" and self.is_verified:
+                send_verified_email_to_user(self)
+                self.verification_status = "email_sent"
 
-        elif self.remark and self.verification_status == "email_ready":
-            send_remark_email_to_user(self)
-            self.verification_status = "email_sent"
+            elif self.remark and self.verification_status == "email_ready":
+                send_remark_email_to_user(self)
+                self.verification_status = "email_sent"
         super().save(*args, **kwargs)
 
 
