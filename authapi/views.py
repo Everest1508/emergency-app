@@ -213,8 +213,10 @@ class LogoutAPIView(APIView):
 
     def post(self, request):
         try:
-            print(request.auth.key)
+            print(request.auth.key, request.user.device_id)
             token = Token.objects.get(key=request.auth.key)
+            request.user.device_id = None
+            request.user.save()
             token.delete()
 
             return Response(
