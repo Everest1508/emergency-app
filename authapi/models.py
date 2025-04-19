@@ -2,6 +2,7 @@ from django.contrib.auth.models import AbstractUser
 from django.db import models
 from phonenumber_field.modelfields import PhoneNumberField
 from django.utils.crypto import get_random_string
+from .utils import send_verified_email_to_user, send_remark_email_to_user
 
 from utils.email import send_dynamic_email
 
@@ -38,45 +39,14 @@ class User(AbstractUser):
     )
 
     def save(self, *args, **kwargs):
-        if self.verification_status == "email_ready":
-            self.send_verification_email()
+        if self.verification_status == "pending" and not self.remark:
+            send_verified_email_to_user(self)
             self.verification_status = "email_sent"
+
         elif self.remark and self.verification_status == "pending":
-            self.send_remark_email()
+            send_remark_email_to_user(self)
             self.verification_status = "email_sent"
         super().save(*args, **kwargs)
-
-    def send_verification_email(self):
-        """Function to send verification email automatically"""
-        try:
-            email_template = EmailGroupModel.objects.get(type="driver-verified")
-            context_data = {"username": self.first_name}
-            email_response = send_dynamic_email(
-                subject=email_template.subject,
-                from_email=email_template.from_email,
-                recipient_email=self.email,
-                body_template=email_template.body_template,
-                context_data=context_data,
-            )
-            if email_response["status"] != "error":
-                self.is_verified = True
-        except EmailGroupModel.DoesNotExist:
-            pass  # Handle error if needed
-
-    def send_remark_email(self):
-        """Function to send remark email automatically"""
-        try:
-            email_template = EmailGroupModel.objects.get(type="driver-remark")
-            context_data = {"username": self.first_name, "remark": self.remark}
-            send_dynamic_email(
-                subject=email_template.subject,
-                from_email=email_template.from_email,
-                recipient_email=self.email,
-                body_template=email_template.body_template,
-                context_data=context_data,
-            )
-        except EmailGroupModel.DoesNotExist:
-            pass  # Handle error if needed
 
 
     def generate_verification_token(self):

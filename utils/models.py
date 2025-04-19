@@ -16,3 +16,12 @@ class ApplicationSettings(models.Model):
 
     def __str__(self):
         return f"Application Settings: maximum_requests_per_user={self.maximum_requests_per_user}, search_radius={self.search_radius}, send_request_to={self.send_request_to}"
+    
+
+class EmailAccount(models.Model):
+    email = models.EmailField(unique=True)
+    app_password = models.CharField(max_length=255)
+    is_active = models.BooleanField(default=True)
+
+    def __str__(self):
+        return self.email
