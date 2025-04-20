@@ -309,6 +309,7 @@ class CarRequestListView(APIView):
 
     def get(self, request):
         status_filter = request.query_params.get("status")
+        req_data = {}
         
         if request.user.user_type == "driver":
             car_requests = CustomerRequest.objects.filter(driver=request.user).prefetch_related("driver")
