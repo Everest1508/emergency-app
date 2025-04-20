@@ -332,13 +332,16 @@ class CarRequestListView(APIView):
         
         if response_data:
             req = response_data[0]
-            driver_data = {
-                    "username": req.driver.username,
-                    "name": req.driver.get_full_name(),
-                    "phone": str(req.driver.phone_number),
-                    "car_type": req.driver.get_type_display(),
-                    "profile_pic": req.driver.driver_pic.url if req.driver.driver_pic else None,
-                }
+            driver_data ={}
+            if req.driver:
+                driver_data = {
+                        "username": req.driver.username,
+                        "name": req.driver.get_full_name(),
+                        "phone": str(req.driver.phone_number),
+                        "car_type": req.driver.get_type_display(),
+                        "profile_pic": req.driver.driver_pic.url if req.driver.driver_pic else None,
+                    }
+            
             req_data = {
                 "id": req.id,
                 "request_type": req.request_type,
