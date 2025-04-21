@@ -51,8 +51,13 @@ class User(AbstractUser):
 
 
     def generate_verification_token(self):
-        self.verification_token = get_random_string(64)
-        self.save()
+        while True:
+            token = get_random_string(64)
+            if not User.objects.filter(verification_token=token).exists():
+                self.verification_token = token
+                self.save()
+                break
+
     
     def __str__(self):
         return super().__str__() + " " + self.user_type

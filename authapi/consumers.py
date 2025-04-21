@@ -8,7 +8,8 @@ import urllib.parse
 from django.conf import settings
 import redis
 
-redis_client = redis.Redis.from_url(settings.REDIS_URL, decode_responses=True)
+pool = redis.ConnectionPool.from_url(settings.REDIS_URL, decode_responses=True)
+redis_client = redis.Redis(connection_pool=pool)
 
 
 class UserLocationConsumer(AsyncWebsocketConsumer):
@@ -138,9 +139,11 @@ class UserLocationConsumer(AsyncWebsocketConsumer):
         customer_username = event['customer']['username']
 
         existing_drivers = redis_client.get(f"{customer_username}_has_driver")
+        # This block is written to give user option to book multiple cars
         if existing_drivers:
             drivers_list = json.loads(existing_drivers)
-            drivers_list.append(driver_username)
+            if driver_username not in drivers_list:
+                drivers_list.append(driver_username)
             redis_client.set(f"{customer_username}_has_driver", json.dumps(drivers_list))
         else:
             redis_client.set(f"{customer_username}_has_driver", json.dumps([driver_username]))
