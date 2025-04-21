@@ -49,6 +49,7 @@ jobs:
 
             echo "🧼 Cleaning Docker logs..."
             sudo find /var/lib/docker/containers/ -name '*-json.log' -exec truncate -s 0 {} \; || true
+            sudo rm logs/debug.log || true
 
             echo "🧹 Pruning Docker images and containers..."
             sudo docker image prune -af || true
