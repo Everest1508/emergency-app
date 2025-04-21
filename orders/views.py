@@ -335,12 +335,21 @@ class CarRequestListView(APIView):
             req = response_data[0]
             driver_data ={}
             if req.driver:
+                driver_location = redis_client.geopos("drivers_locations", req.driver.username)
+
+                driver_lat, driver_lon = (None, None)
+                if driver_location and driver_location[0]:  # Ensure location exists
+                    driver_lon, driver_lat = driver_location[0]  
                 driver_data = {
                         "username": req.driver.username,
                         "name": req.driver.get_full_name(),
                         "phone": str(req.driver.phone_number),
                         "car_type": req.driver.get_type_display(),
                         "profile_pic": req.driver.driver_pic.url if req.driver.driver_pic else None,
+                        "location": {
+                            "lat": float(driver_lat) if driver_lat else None,
+                            "lon": float(driver_lon) if driver_lon else None,
+                        }
                     }
             
             req_data = {
