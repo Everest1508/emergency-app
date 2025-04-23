@@ -325,8 +325,8 @@ class CarRequestListView(APIView):
         
         response_data = []
         for request_data in car_requests:
-            if request.user.user_type == "driver":
-                request_data.pop("otp", None)  
+            # if request.user.user_type == "driver":
+            #     request_data.pop("otp", None)  
             response_data.append(request_data)
         
         response_requests = {}
