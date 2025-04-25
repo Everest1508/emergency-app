@@ -39,6 +39,7 @@ class User(AbstractUser):
     )
 
     def save(self, *args, **kwargs):
+        delete_flag = False
         if self.user_type == "driver":
             if self.verification_status == "email_ready" and self.is_verified:
                 send_verified_email_to_user(self)
@@ -47,7 +48,10 @@ class User(AbstractUser):
             elif self.remark and self.verification_status == "email_ready":
                 send_remark_email_to_user(self)
                 self.verification_status = "email_sent"
+                delete_flag = True
         super().save(*args, **kwargs)
+        if delete_flag:
+            self.delete()
 
 
     def generate_verification_token(self):
