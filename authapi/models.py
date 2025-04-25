@@ -5,6 +5,7 @@ from django.utils.crypto import get_random_string
 from .utils import send_verified_email_to_user, send_remark_email_to_user
 from django.db.models.signals import post_save
 from django.dispatch import receiver
+from django.db import transaction
 
 from utils.email import send_dynamic_email
 
@@ -80,7 +81,6 @@ class CarPic(models.Model):
     image = models.ImageField(upload_to='car/')
 
 
-
 @receiver(post_save, sender=User)
 def delete_user_after_remark_email(sender, instance, created, **kwargs):
     if (
@@ -89,5 +89,8 @@ def delete_user_after_remark_email(sender, instance, created, **kwargs):
         and instance.verification_status == "email_sent"
         and not instance.is_verified
     ):
-        print(f"Deleting user {instance.email} after remark email.")
-        instance.delete()
+        def delayed_delete():
+            print(f"Deleting user {instance.email} after remark email.")
+            instance.delete()
+        
+        transaction.on_commit(delayed_delete)
