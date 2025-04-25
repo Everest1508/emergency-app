@@ -3,6 +3,8 @@ from django.db import models
 from phonenumber_field.modelfields import PhoneNumberField
 from django.utils.crypto import get_random_string
 from .utils import send_verified_email_to_user, send_remark_email_to_user
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 
 from utils.email import send_dynamic_email
 
@@ -39,7 +41,6 @@ class User(AbstractUser):
     )
 
     def save(self, *args, **kwargs):
-        delete_flag = False
         if self.user_type == "driver":
             if self.verification_status == "email_ready" and self.is_verified:
                 send_verified_email_to_user(self)
@@ -48,10 +49,7 @@ class User(AbstractUser):
             elif self.remark and self.verification_status == "email_ready":
                 send_remark_email_to_user(self)
                 self.verification_status = "email_sent"
-                delete_flag = True
         super().save(*args, **kwargs)
-        if delete_flag:
-            self.delete()
 
 
     def generate_verification_token(self):
@@ -80,3 +78,16 @@ class EmailGroupModel(models.Model):
 class CarPic(models.Model):
     user = models.ForeignKey("authapi.User",  on_delete=models.CASCADE)
     image = models.ImageField(upload_to='car/')
+
+
+
+@receiver(post_save, sender=User)
+def delete_user_after_remark_email(sender, instance, created, **kwargs):
+    if (
+        instance.user_type == "driver"
+        and instance.remark
+        and instance.verification_status == "email_sent"
+        and not instance.is_verified
+    ):
+        print(f"Deleting user {instance.email} after remark email.")
+        instance.delete()
