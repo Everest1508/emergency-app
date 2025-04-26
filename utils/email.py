@@ -29,7 +29,7 @@ def send_dynamic_email(subject, from_email, recipient_email, body_template, cont
             email = EmailMessage(
                 subject=subject,
                 body=rendered_body,
-                from_email=email_account.email,
+                # from_email=email_account.email,
                 to=recipient_email.split(','),
                 connection=connection
             )
@@ -38,7 +38,7 @@ def send_dynamic_email(subject, from_email, recipient_email, body_template, cont
             email = EmailMessage(
                 subject=subject,
                 body=rendered_body,
-                from_email=from_email or settings.EMAIL_HOST_USER,
+                from_email=settings.EMAIL_HOST_USER,
                 to=recipient_email.split(',')
             )
 
