@@ -1,77 +1,3 @@
-# name: Deploy to EC2
-
-# on:
-#   push:
-#     branches:
-#       - main
-
-# jobs:
-#   deploy:
-#     runs-on: ubuntu-latest
-
-#     steps:
-
-#       # Step 1: Checkout the code
-#       - name: Checkout code
-#         uses: actions/checkout@v3
-
-#       # Step 2: Set up SSH key and permissions
-#       - name: Add SSH key
-#         run: |
-#           echo "${{ secrets.EC2_KEY_PAIR }}" > ec2-key.pem
-#           chmod 600 ec2-key.pem
-
-#       # Step 3: SSH into EC2 and deploy
-#       - name: Deploy to EC2
-#         run: |
-#           ssh -o StrictHostKeyChecking=no -i ec2-key.pem ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
-#             set -e  # Exit on any error
-
-#             sudo docker system prune -af --volumes
-
-#             # Remove apt cache
-#             sudo apt-get clean
-
-#             # Clean up old log files
-#             sudo journalctl --vacuum-time=2d
-#             sudo find /var/log -type f -name "*.log" -delete || true
-
-#             # Show remaining disk space
-#             df -h /
-
-#             cd /home/ubuntu/emergency-app
-
-#             echo "🚀 Pulling latest code..."
-#             git pull origin main
-
-#             echo "🧹 Stopping old containers..."
-#             sudo docker compose down --remove-orphans
-
-#             echo "🧼 Cleaning Docker logs..."
-#             sudo find /var/lib/docker/containers/ -name '*-json.log' -exec truncate -s 0 {} \; || true
-#             sudo rm logs/debug.log || true
-
-#             echo "🧹 Pruning Docker images and containers..."
-#             sudo docker image prune -af || true
-#             sudo docker container prune -f || true
-#             sudo docker volume prune -f || true
-#             sudo docker network prune -f || true
-
-#             echo "🛠️ Building and starting services..."
-#             sudo docker compose up -d --build --remove-orphans
-
-#             echo "📦 Running Django migrations..."
-#             sudo docker exec django_app python manage.py makemigrations || true
-#             sudo docker exec django_app python manage.py migrate || true
-
-#             echo "✅ Deployment complete."
-
-#             echo "💾 Disk Usage After Cleanup:"
-#             df -h /
-
-#           EOF
-
-
 name: Deploy to EC2
 
 on:
@@ -101,17 +27,38 @@ jobs:
           ssh -o StrictHostKeyChecking=no -i ec2-key.pem ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
             set -e  # Exit on any error
 
+            sudo docker system prune -af --volumes
+
+            # Remove apt cache
+            sudo apt-get clean
+
+            # Clean up old log files
+            sudo journalctl --vacuum-time=2d
+            sudo find /var/log -type f -name "*.log" -delete || true
+
+            # Show remaining disk space
             df -h /
 
             cd /home/ubuntu/emergency-app
 
+            echo "🚀 Pulling latest code..."
             git pull origin main
 
-            sudo docker compose restart
+            echo "🧹 Stopping old containers..."
+            sudo docker compose down --remove-orphans
 
+            echo "🧼 Cleaning Docker logs..."
             sudo find /var/lib/docker/containers/ -name '*-json.log' -exec truncate -s 0 {} \; || true
             sudo rm logs/debug.log || true
 
+            echo "🧹 Pruning Docker images and containers..."
+            sudo docker image prune -af || true
+            sudo docker container prune -f || true
+            sudo docker volume prune -f || true
+            sudo docker network prune -f || true
+
+            echo "🛠️ Building and starting services..."
+            sudo docker compose up -d --build --remove-orphans
 
             echo "📦 Running Django migrations..."
             sudo docker exec django_app python manage.py makemigrations || true
@@ -123,3 +70,56 @@ jobs:
             df -h /
 
           EOF
+
+
+# name: Deploy to EC2
+
+# on:
+#   push:
+#     branches:
+#       - main
+
+# jobs:
+#   deploy:
+#     runs-on: ubuntu-latest
+
+#     steps:
+
+#       # Step 1: Checkout the code
+#       - name: Checkout code
+#         uses: actions/checkout@v3
+
+#       # Step 2: Set up SSH key and permissions
+#       - name: Add SSH key
+#         run: |
+#           echo "${{ secrets.EC2_KEY_PAIR }}" > ec2-key.pem
+#           chmod 600 ec2-key.pem
+
+#       # Step 3: SSH into EC2 and deploy
+#       - name: Deploy to EC2
+#         run: |
+#           ssh -o StrictHostKeyChecking=no -i ec2-key.pem ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
+#             set -e  # Exit on any error
+
+#             df -h /
+
+#             cd /home/ubuntu/emergency-app
+
+#             git pull origin main
+
+#             sudo docker compose restart
+
+#             sudo find /var/lib/docker/containers/ -name '*-json.log' -exec truncate -s 0 {} \; || true
+#             sudo rm logs/debug.log || true
+
+
+#             echo "📦 Running Django migrations..."
+#             sudo docker exec django_app python manage.py makemigrations || true
+#             sudo docker exec django_app python manage.py migrate || true
+
+#             echo "✅ Deployment complete."
+
+#             echo "💾 Disk Usage After Cleanup:"
+#             df -h /
+
+#           EOF
