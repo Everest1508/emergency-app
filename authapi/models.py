@@ -41,6 +41,8 @@ class User(AbstractUser):
         max_length=20, choices=VERIFICATION_STATUS_CHOICES, default='pending'
     )
     on_duty = models.BooleanField(default=False)
+    added_by = models.ForeignKey("authapi.User", on_delete=models.CASCADE, null=True, blank=True)
+
 
     def save(self, *args, **kwargs):
         if self.user_type == "driver":

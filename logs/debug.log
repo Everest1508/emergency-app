@@ -81,3 +81,4 @@
 [2025-04-21 20:49:25,017] DEBUG daphne.http_protocol | HTTP close for ['172.18.0.1', 56150]
 [2025-04-21 20:49:25,017] DEBUG daphne.http_protocol | HTTP response complete for ['172.18.0.1', 56150]
 [2025-04-21 20:49:37,646] INFO daphne.server | Killed 0 pending application instances
+[2025-04-28 11:46:32,879] DEBUG asyncio | Using selector: EpollSelector

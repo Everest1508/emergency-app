@@ -413,6 +413,13 @@ class OnDutyToggleView(APIView):
             # Toggle the on_duty status
             user = request.user
             user.on_duty = not user.on_duty 
+            from driveradmin.models import UserOnDutyHistory
+            user_status =  'on' if user.on_duty else 'off'
+            try:
+                UserOnDutyHistory.objects.create(user=user,status=user_status)
+            except:
+                return Response(data_response(400,"Bad Request",{"message": "Try Again"}), status=status.HTTP_400_BAD_REQUEST)
+
             user.save()
 
             return Response(data_response(200,"Ok",{"message": 'on' if user.on_duty else 'off'}), status=status.HTTP_200_OK)

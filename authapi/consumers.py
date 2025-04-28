@@ -5,6 +5,7 @@ from .models import User
 from rest_framework.authtoken.models import Token
 from .utils import get_key_from_cookies
 import urllib.parse
+from driveradmin.models import create_status_history
 from django.conf import settings
 import redis
 
@@ -38,6 +39,9 @@ class UserLocationConsumer(AsyncWebsocketConsumer):
         if self.user.user_type == 'driver' and self.user.type:
             self.room_drivers = f'drivers_{self.user.type}'
             await self.channel_layer.group_add(self.room_drivers, self.channel_name)
+            user_status = "on" if self.user.on_duty else "off"
+            create_status_history(user=self.user, status="online", user_status=user_status)
+            
 
         if self.user.user_type == 'customer':
             self.room_customers = 'customers'
@@ -60,8 +64,9 @@ class UserLocationConsumer(AsyncWebsocketConsumer):
         if hasattr(self, 'room_customers'):
             await self.channel_layer.group_discard(self.room_customers, self.channel_name)
 
-        # if self.user.user_type == 'driver':
-        #     await self.mark_user_offline(self.user.username)
+        if self.user.user_type == 'driver':
+            user_status = "on" if self.user.on_duty else "off"
+            create_status_history(user=self.user, status="offline", user_status=user_status)
 
         # This is turned off for now        
         # self.remove_driver_from_redis(self.user.username, self.user.user_type)
