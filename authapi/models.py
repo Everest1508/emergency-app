@@ -40,6 +40,7 @@ class User(AbstractUser):
     verification_status = models.CharField(
         max_length=20, choices=VERIFICATION_STATUS_CHOICES, default='pending'
     )
+    on_duty = models.BooleanField(default=False)
 
     def save(self, *args, **kwargs):
         if self.user_type == "driver":

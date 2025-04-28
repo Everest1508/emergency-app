@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import RegisterAPIView, LoginAPIView, LogoutAPIView,verify_account,ResendVerificationEmailAPIView,DriverRegisterAPIView,ForgotPasswordAPIView,ResetPasswordAPIView
+from .views import RegisterAPIView, LoginAPIView, LogoutAPIView,verify_account,ResendVerificationEmailAPIView,DriverRegisterAPIView,ForgotPasswordAPIView,ResetPasswordAPIView, OnDutyToggleView
 
 urlpatterns = [
     path("register/", RegisterAPIView.as_view(), name="register"),
@@ -10,4 +10,5 @@ urlpatterns = [
     path('driver/register/', DriverRegisterAPIView.as_view(), name='driver-register'),
     path('forgot-password/', ForgotPasswordAPIView.as_view(), name='forgot-password'),
     path('reset-password/<str:token>/', ResetPasswordAPIView.as_view(), name='reset-password'),
+    path('on-duty/', OnDutyToggleView.as_view(), name='on_duty_toggle'),
 ]

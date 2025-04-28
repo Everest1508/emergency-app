@@ -394,3 +394,28 @@ class DriverRegisterAPIView(APIView):
             ),
             status=status.HTTP_400_BAD_REQUEST,
         )
+
+
+class OnDutyToggleView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        try:
+            # Ensure the user is a driver
+            if request.user.user_type != 'driver':
+                return Response(data_response(
+                    400,
+                    "Bad Request",
+                    {"errors":["You are not valid User type!",]}
+                ), status=status.HTTP_400_BAD_REQUEST,
+            )
+            
+            # Toggle the on_duty status
+            user = request.user
+            user.on_duty = not user.on_duty 
+            user.save()
+
+            return Response(data_response(200,"Ok",{"message": 'on' if user.on_duty else 'off'}), status=status.HTTP_200_OK)
+        
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
