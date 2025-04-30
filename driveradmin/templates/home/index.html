@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"> <!-- Viewport tag added -->
+  <title>Drivers Management</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body { background-color: #f8f9fa; }
+  </style>
+</head>
+
+<body class="text-gray-800 p-8">
+
+  <!-- Page Header -->
+  <div class="flex justify-between items-center mb-6">
+    <h1 class="text-xl font-semibold text-gray-700">Drivers Management</h1>
+    
+  </div>
+
+{% include 'components/sidebar.html' %} <!-- Sidebar included here -->
+  <!-- Stat Cards -->
+  <div class="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-8">
+    <div class="bg-white border border-gray-300 p-4 rounded">
+      <div class="text-xs text-gray-500">Total Drivers</div>
+      <div class="text-2xl font-bold mt-2" id="totalDrivers">0</div>
+    </div>
+    <div class="bg-white border border-gray-300 p-4 rounded">
+      <div class="text-xs text-gray-500">Online Drivers</div>
+      <div class="text-2xl font-bold mt-2" id="onlineDrivers">0</div>
+    </div>
+    <div class="bg-white border border-gray-300 p-4 rounded">
+      <div class="text-xs text-gray-500">On Duty Drivers</div>
+      <div class="text-2xl font-bold mt-2" id="onDutyDrivers">0</div>
+    </div>
+    <div class="bg-white border border-gray-300 p-4 rounded">
+      <div class="text-xs text-gray-500">Recently Added</div>
+      <div class="text-2xl font-bold mt-2" id="recentDrivers">0</div>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div class="flex flex-col sm:flex-row justify-between items-center gap-4 mb-6">
+      <input type="text" id="searchInput" placeholder="Search Drivers..." class="w-full sm:w-1/3 border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-gray-300">
+      <div class="flex gap-2">
+          <button id="tableViewBtn" class="text-sm border border-gray-300 px-3 py-1 rounded hover:bg-gray-100">Tabular View</button>
+          <button id="graphViewBtn" class="text-sm border border-gray-300 px-3 py-1 rounded hover:bg-gray-100">Graphical View</button>
+        </div>
+      <select id="statusFilter" class="w-full sm:w-1/4 border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-gray-300">
+      <option value="">All Status</option>
+      <option value="onDuty">On Duty</option>
+      <option value="offline">Offline</option>
+    </select>
+  </div>
+
+  <!-- Views -->
+  <div id="tabularView">
+    <div class="bg-white border border-gray-300 rounded overflow-x-auto">
+      <table class="min-w-full text-sm">
+        <thead class="bg-gray-100 text-gray-600 uppercase">
+          <tr>
+            <th class="py-3 px-4 text-left">Driver Name</th>
+            <th class="py-3 px-4 text-left">Status</th>
+            <th class="py-3 px-4 text-left">Online Time</th>
+            <th class="py-3 px-4 text-left">Offline Time</th>
+            <th class="py-3 px-4 text-center">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="driverTableBody" class="text-gray-700">
+          <!-- Dynamic Rows -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div id="graphicalView" class="hidden">
+    <div class="bg-white border border-gray-300 rounded p-6">
+      <canvas id="driverChart" height="100"></canvas>
+    </div>
+  </div>
+
+  <!-- Script -->
+  <script>
+    const drivers = [
+      { name: "John Doe", status: "onDuty", onlineTime: "09:00 AM", offlineTime: "-" },
+      { name: "Alice Smith", status: "offline", onlineTime: "08:30 AM", offlineTime: "01:00 PM" },
+      { name: "Bob Johnson", status: "onDuty", onlineTime: "10:00 AM", offlineTime: "-" },
+      { name: "Charlie Brown", status: "offline", onlineTime: "07:45 AM", offlineTime: "11:30 AM" },
+      { name: "David Wilson", status: "onDuty", onlineTime: "06:00 AM", offlineTime: "-" },
+    ];
+
+    function updateStats() {
+      document.getElementById('totalDrivers').textContent = drivers.length;
+      document.getElementById('onlineDrivers').textContent = drivers.filter(d => d.status !== 'offline').length;
+      document.getElementById('onDutyDrivers').textContent = drivers.filter(d => d.status === 'onDuty').length;
+      document.getElementById('recentDrivers').textContent = 2; // Hardcoded for now
+    }
+
+    function renderDrivers(filter = '', search = '') {
+      const tbody = document.getElementById('driverTableBody');
+      tbody.innerHTML = '';
+
+      let filtered = drivers.filter(driver => {
+        if (filter && driver.status !== filter) return false;
+        if (search && !driver.name.toLowerCase().includes(search.toLowerCase())) return false;
+        return true;
+      });
+
+      filtered.forEach(driver => {
+        const tr = document.createElement('tr');
+        tr.className = 'border-t border-gray-200 hover:bg-gray-50';
+        tr.innerHTML = `
+          <td class="py-3 px-4">${driver.name}</td>
+          <td class="py-3 px-4">${driver.status === 'onDuty' ? 'On Duty' : 'Offline'}</td>
+          <td class="py-3 px-4">${driver.onlineTime}</td>
+          <td class="py-3 px-4">${driver.offlineTime}</td>
+          <td class="py-3 px-4 text-center">
+            <button class="text-xs border border-gray-300 rounded px-2 py-1 hover:bg-gray-100">View</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function renderChart() {
+      const ctx = document.getElementById('driverChart').getContext('2d');
+      new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: ['Total', 'Online', 'On Duty'],
+          datasets: [{
+            label: 'Drivers',
+            data: [
+              drivers.length,
+              drivers.filter(d => d.status !== 'offline').length,
+              drivers.filter(d => d.status === 'onDuty').length
+            ],
+            backgroundColor: ['#4b5563', '#6b7280', '#9ca3af'], // Frappe admin colors: Gray shades
+            borderColor: ['#4b5563', '#6b7280', '#9ca3af'],
+            borderWidth: 1
+          }]
+        },
+        options: {
+          responsive: true,
+          scales: { y: { beginAtZero: true } },
+          plugins: { legend: { display: false } }
+        }
+      });
+    }
+
+    document.getElementById('searchInput').addEventListener('input', (e) => {
+      renderDrivers(document.getElementById('statusFilter').value, e.target.value);
+    });
+
+    document.getElementById('statusFilter').addEventListener('change', (e) => {
+      renderDrivers(e.target.value, document.getElementById('searchInput').value);
+    });
+
+    document.getElementById('tableViewBtn').addEventListener('click', () => {
+      document.getElementById('tabularView').classList.remove('hidden');
+      document.getElementById('graphicalView').classList.add('hidden');
+    });
+
+    document.getElementById('graphViewBtn').addEventListener('click', () => {
+      document.getElementById('tabularView').classList.add('hidden');
+      document.getElementById('graphicalView').classList.remove('hidden');
+      renderChart();
+    });
+
+    updateStats();
+    renderDrivers();
+  </script>
+
+</body>
+</html>

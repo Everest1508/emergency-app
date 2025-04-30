@@ -42,6 +42,7 @@ class User(AbstractUser):
     )
     on_duty = models.BooleanField(default=False)
     added_by = models.ForeignKey("authapi.User", on_delete=models.CASCADE, null=True, blank=True)
+    is_driver_admin = models.BooleanField(default=False)
 
 
     def save(self, *args, **kwargs):

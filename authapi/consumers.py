@@ -41,11 +41,22 @@ class UserLocationConsumer(AsyncWebsocketConsumer):
             await self.channel_layer.group_add(self.room_drivers, self.channel_name)
             user_status = "on" if self.user.on_duty else "off"
             create_status_history(user=self.user, status="online", user_status=user_status)
-            
 
-        if self.user.user_type == 'customer':
+            admin_username = self.user.added_by.username if self.user.added_by else None
+            if admin_username:
+                redis_client.set(f"driver_admin:{self.user.username}", admin_username)
+
+            
+        if self.user.is_driver_admin:
+            self.room_admin = f"admin_{self.user.username}"
+            await self.channel_layer.group_add(self.room_admin, self.channel_name)
+
+        elif self.user.user_type == 'customer':
             self.room_customers = 'customers'
             await self.channel_layer.group_add(self.room_customers, self.channel_name)
+
+        
+
 
         await self.accept()
 
@@ -67,6 +78,8 @@ class UserLocationConsumer(AsyncWebsocketConsumer):
         if self.user.user_type == 'driver':
             user_status = "on" if self.user.on_duty else "off"
             create_status_history(user=self.user, status="offline", user_status=user_status)
+            redis_client.delete(f"driver_admin:{self.user.username}")
+
 
         # This is turned off for now        
         # self.remove_driver_from_redis(self.user.username, self.user.user_type)
@@ -88,11 +101,27 @@ class UserLocationConsumer(AsyncWebsocketConsumer):
                 customer_username = redis_client.get(f"{self.user.username}_has_customer")
                 if customer_username:
                     await self.send_location_update(customer_username, latitude, longitude, "driver")
+                
+                admin_username = redis_client.get(f"driver_admin:{self.user.username}")
+                if admin_username:
+                    await self.channel_layer.group_send(
+                        f"admin_{admin_username}",
+                        {
+                            'type': 'admin_driver_location_update',
+                            'latitude': latitude,
+                            'longitude': longitude,
+                            'driver': self.user.username,
+                            'timestamp': data.get("timestamp", None)
+                        }
+                    )
+
             elif self.user.user_type == "customer":
                 driver_list = redis_client.get(f"{self.user.username}_has_driver")
                 if driver_list:
                     for driver in json.loads(driver_list):
                         await self.send_location_update(driver, latitude, longitude, "customer")
+                
+                
         except Exception as e:
             await self.send(text_data=json.dumps({'error': str(e)}))
 
@@ -113,6 +142,11 @@ class UserLocationConsumer(AsyncWebsocketConsumer):
         Sends location updates to the WebSocket client.
         """
         await self.send(text_data=json.dumps(event))
+    
+    
+    async def admin_driver_location_update(self, event):
+        await self.send(text_data=json.dumps(event))
+
 
     
     async def new_booking_event(self, event):

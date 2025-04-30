@@ -1,0 +1,26 @@
+<!-- components/driver_card.html -->
+<div class="bg-white dark:bg-gray-900 rounded-xl shadow p-4 flex items-center justify-between transition hover:shadow-lg">
+    <div class="flex items-center space-x-4">
+        <div class="h-12 w-12 bg-purple-200 rounded-full flex items-center justify-center text-purple-700 font-bold">
+            {{ driver.initials }}
+        </div>
+        <div>
+            <h3 class="text-lg font-semibold text-gray-800 dark:text-white">{{ driver.name }}</h3>
+            <p class="text-sm text-gray-500 dark:text-gray-400">On Duty: {{ driver.on_duty_time }}</p>
+        </div>
+    </div>
+    <div>
+        <<div>
+            {% if driver.is_active %}
+                <span class="px-3 py-1 text-sm rounded-full bg-green-100 text-green-800">
+                    Active
+                </span>
+            {% else %}
+                <span class="px-3 py-1 text-sm rounded-full bg-red-100 text-red-800">
+                    Inactive
+                </span>
+            {% endif %}
+        </div>
+        
+    </div>
+</div>

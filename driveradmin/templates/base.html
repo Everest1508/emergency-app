@@ -1,0 +1,56 @@
+<!-- templates/base.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Driver Tracker{% endblock %}</title>
+    
+    <!-- TailwindCSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Tailwind Light Mode Setup -->
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              'primary': '#343a40',  /* Dark gray for premium look */
+              'secondary': '#f8f9fa', /* Light gray for soft contrast */
+            },
+          },
+        }
+      }
+    </script>
+
+    <!-- Favicon (Optional) -->
+    <link rel="icon" href="https://api.iconify.design/mdi:car.svg?color=purple" type="image/svg+xml">
+</head>
+
+<body class="bg-white text-gray-900 min-h-screen font-sans">
+
+    <!-- Navbar -->
+    <header class="bg-white shadow-md p-4 flex items-center justify-between">
+        <div class="text-2xl font-semibold text-primary">DriverTrack</div>
+        
+        <div class="flex items-center space-x-6">
+            <!-- Logout Button -->
+            <a href="{% url 'logout' %}" class="bg-primary text-white py-2 px-6 rounded-lg text-sm font-medium hover:bg-gray-700 transition">
+                Logout
+            </a>
+        </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="px-6 py-8">
+        {% block content %}
+        {% endblock %}
+    </main>
+
+    <!-- Footer (Optional) -->
+    <footer class="text-center text-gray-400 text-xs py-4">
+        © 2025 Zora System
+    </footer>
+
+</body>
+</html>
