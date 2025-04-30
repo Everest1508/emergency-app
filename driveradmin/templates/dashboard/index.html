@@ -20,28 +20,75 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            // Load drivers data passed from the Django view
             const drivers = JSON.parse('{{ drivers_json|escapejs }}');
-
-            const map = L.map('map').setView([19.988480, 73.770598], 11); // Change default location to admin city
-
+            const adminUsername = "{{ request.user.username }}";
+            const token = "{{ token.key }}";
+            const markers = {};
+    
+            const map = L.map('map').setView([19.988480, 73.770598], 11);
+    
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+                attribution: '&copy; OpenStreetMap contributors',
             }).addTo(map);
-
+    
+            // Initial static markers
             drivers.forEach(driver => {
                 const marker = L.marker([driver.lat, driver.lng]).addTo(map);
-
-                // Bind popup
                 marker.bindPopup(`
                     <div style="min-width: 150px">
-                        <strong>${driver.name}</strong><br />
+                        <strong>${driver.username}</strong><br />
                         Status: <span style="color:${driver.status === 'online' ? 'green' : 'red'}">${driver.status}</span><br />
                         Duty: ${driver.dutyStatus}
                     </div>
                 `);
+                markers[driver.username] = marker;
             });
+    
+            console.log("Markers after initial placement:", markers);  // Log the markers object
+            console.log("Initial markers (by username):", Object.keys(markers));  // Log the keys
+    
+            // Determine the protocol dynamically based on the current page's protocol
+            const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
+
+            // WebSocket connection using the appropriate protocol (wss for HTTPS, ws for HTTP)
+            const socket = new WebSocket(`${protocol}://${window.location.host}/ws/user/${adminUsername}/?token=${token}`);
+
+            socket.onopen = () => {
+                console.log("WebSocket connected.");
+            };
+    
+            socket.onmessage = (e) => {
+                const data = JSON.parse(e.data);
+
+                // ✅ Log the complete data payload received
+                console.log("🔄 Full WebSocket data received:", data);
+
+                if (data.type === "admin_driver_location_update") {
+                    const { latitude, longitude, driver: incomingDriver } = data;
+                    console.log("📍 Location update → Driver:", incomingDriver, "| Lat:", latitude, "| Lng:", longitude);
+
+                    // Check if the incoming driver already exists in markers
+                    if (markers.hasOwnProperty(incomingDriver)) {
+                        console.log("✅ Existing marker found for:", incomingDriver);
+                        markers[incomingDriver].setLatLng([latitude, longitude]);
+                    } else {
+                        console.warn("⚠️ No existing marker for:", incomingDriver, "→ Creating new one.");
+                        const newMarker = L.marker([latitude, longitude]).addTo(map);
+                        newMarker.bindPopup(`<strong>${incomingDriver}</strong><br />Live Update`);
+                        markers[incomingDriver] = newMarker;
+                    }
+
+                    // Log markers after update
+                    console.log("Markers (after WebSocket update):", markers);
+                    console.log("Updated markers keys:", Object.keys(markers));
+                }
+            };
+    
+            socket.onclose = () => {
+                console.log("WebSocket disconnected.");
+            };
         });
     </script>
+    
 </body>
 </html>

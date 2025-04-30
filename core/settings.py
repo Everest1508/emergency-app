@@ -201,3 +201,8 @@ LOGGING = {
         'level': 'DEBUG',
     },
 }
+
+CSRF_TRUSTED_ORIGINS = [
+    'https://api-emergency.mooo.com',
+    'http://127.0.0.1:8000',  # If you're working locally
+]

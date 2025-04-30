@@ -97,7 +97,7 @@ class CustomUserAdmin(UserAdmin):
     inlines = [CarPicInline,]
     
     fieldsets = (
-        (None, {'fields': ('username', 'password','added_by')}),
+        (None, {'fields': ('username', 'password','added_by','is_driver_admin')}),
         ('Personal info', {'fields': ('first_name', 'last_name', 'email', 'phone_number','license_pic','type','driver_pic', 'user_type',"remark","verification_status","device_id")}),
         ('Permissions', {'fields': ('is_active', 'is_staff', 'is_superuser', 'is_verified', 'verification_token','forget_token', 'groups', 'user_permissions')}),
         ('Important dates', {'fields': ('last_login', 'date_joined')}),

@@ -41,10 +41,15 @@ class UserLocationConsumer(AsyncWebsocketConsumer):
             await self.channel_layer.group_add(self.room_drivers, self.channel_name)
             user_status = "on" if self.user.on_duty else "off"
             create_status_history(user=self.user, status="online", user_status=user_status)
-
-            admin_username = self.user.added_by.username if self.user.added_by else None
-            if admin_username:
+            try:
+                print("[DEBUG] Getting admin username")
+                admin_username = await get_admin_username(self.user)
                 redis_client.set(f"driver_admin:{self.user.username}", admin_username)
+                print(f"[DEBUG] admin_username = {admin_username}")
+            except Exception as e:
+                print("[ERROR] Failed getting admin_username:", str(e))
+                admin_username = None
+
 
             
         if self.user.is_driver_admin:
@@ -104,6 +109,7 @@ class UserLocationConsumer(AsyncWebsocketConsumer):
                 
                 admin_username = redis_client.get(f"driver_admin:{self.user.username}")
                 if admin_username:
+                    print(admin_username)
                     await self.channel_layer.group_send(
                         f"admin_{admin_username}",
                         {
@@ -232,3 +238,8 @@ class UserLocationConsumer(AsyncWebsocketConsumer):
             redis_client.zrem("customers_locations", username)
         elif type == "driver":
             redis_client.zrem("drivers_locations", username)
+
+@database_sync_to_async
+def get_admin_username(user):
+    return user.added_by.username if user and user.added_by else None
+

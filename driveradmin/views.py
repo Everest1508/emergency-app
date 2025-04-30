@@ -37,6 +37,7 @@ def dashboard_view(request):
     admin = request.user
     drivers_queryset = User.objects.filter(user_type="driver", added_by=admin)
 
+
     # Get latest status and duty status per driver using subqueries
     latest_statuses = UserStatusHistory.objects.filter(user=OuterRef('pk')).order_by('-timestamp')
     latest_duties = UserOnDutyHistory.objects.filter(user=OuterRef('pk')).order_by('-timestamp')
@@ -56,7 +57,7 @@ def dashboard_view(request):
 
             drivers.append({
                 "id": driver.id,
-                "name": driver.username,
+                "username": driver.username,
                 "lat": lat,
                 "lng": lng,
                 "status": driver.latest_status or "Unknown",
@@ -64,7 +65,8 @@ def dashboard_view(request):
             })
     drivers_json = json.dumps(drivers)
     print(drivers_json)
-    return render(request, 'dashboard/index.html', {"drivers_json": drivers_json})
+    tkn,_ =  Token.objects.get_or_create(user=request.user)
+    return render(request, 'dashboard/index.html', {"drivers_json": drivers_json,"token":tkn})
 
 
 @login_required(login_url='zora_login')
@@ -97,8 +99,6 @@ def driver_view(request):
                 "status": driver.latest_status or "Unknown",
                 "dutyStatus": "On Duty" if driver.latest_duty == "on" else "Off Duty"
             })
-
-    print(drivers_json)
 
     drivers_json = json.dumps(drivers)
     return render(request, 'home/index.html', {"drivers_json": drivers_json})
