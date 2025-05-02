@@ -82,31 +82,26 @@
 
   <!-- Script -->
   <script>
-    const drivers = [
-      { name: "John Doe", status: "onDuty", onlineTime: "09:00 AM", offlineTime: "-" },
-      { name: "Alice Smith", status: "offline", onlineTime: "08:30 AM", offlineTime: "01:00 PM" },
-      { name: "Bob Johnson", status: "onDuty", onlineTime: "10:00 AM", offlineTime: "-" },
-      { name: "Charlie Brown", status: "offline", onlineTime: "07:45 AM", offlineTime: "11:30 AM" },
-      { name: "David Wilson", status: "onDuty", onlineTime: "06:00 AM", offlineTime: "-" },
-    ];
-
+    // Pass the dynamic drivers data from Django context to JavaScript
+    const drivers = JSON.parse('{{ driver_data|escapejs }}');
+  
     function updateStats() {
       document.getElementById('totalDrivers').textContent = drivers.length;
       document.getElementById('onlineDrivers').textContent = drivers.filter(d => d.status !== 'offline').length;
       document.getElementById('onDutyDrivers').textContent = drivers.filter(d => d.status === 'onDuty').length;
-      document.getElementById('recentDrivers').textContent = 2; // Hardcoded for now
+      document.getElementById('recentDrivers').textContent = JSON.parse('{{ recent_drivers|default:"0"|escapejs }}');  // Use default to handle undefined context
     }
-
+  
     function renderDrivers(filter = '', search = '') {
       const tbody = document.getElementById('driverTableBody');
       tbody.innerHTML = '';
-
+  
       let filtered = drivers.filter(driver => {
         if (filter && driver.status !== filter) return false;
         if (search && !driver.name.toLowerCase().includes(search.toLowerCase())) return false;
         return true;
       });
-
+  
       filtered.forEach(driver => {
         const tr = document.createElement('tr');
         tr.className = 'border-t border-gray-200 hover:bg-gray-50';
@@ -122,7 +117,7 @@
         tbody.appendChild(tr);
       });
     }
-
+  
     function renderChart() {
       const ctx = document.getElementById('driverChart').getContext('2d');
       new Chart(ctx, {
@@ -148,29 +143,30 @@
         }
       });
     }
-
+  
     document.getElementById('searchInput').addEventListener('input', (e) => {
       renderDrivers(document.getElementById('statusFilter').value, e.target.value);
     });
-
+  
     document.getElementById('statusFilter').addEventListener('change', (e) => {
       renderDrivers(e.target.value, document.getElementById('searchInput').value);
     });
-
+  
     document.getElementById('tableViewBtn').addEventListener('click', () => {
       document.getElementById('tabularView').classList.remove('hidden');
       document.getElementById('graphicalView').classList.add('hidden');
     });
-
+  
     document.getElementById('graphViewBtn').addEventListener('click', () => {
       document.getElementById('tabularView').classList.add('hidden');
       document.getElementById('graphicalView').classList.remove('hidden');
       renderChart();
     });
-
+  
     updateStats();
     renderDrivers();
   </script>
+  
 
 </body>
 </html>

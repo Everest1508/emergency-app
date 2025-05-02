@@ -1,4 +1,6 @@
 # views.py
+from django.utils import timezone
+from datetime import timedelta
 import json
 from django.shortcuts import render
 from django.contrib.auth import authenticate, login
@@ -73,37 +75,39 @@ def dashboard_view(request):
 
 @login_required(login_url='zora_login')
 def driver_view(request):
-    admin = request.user
-    drivers_queryset = User.objects.filter(user_type="driver", added_by=admin)
+    drivers = User.objects.filter(user_type='driver', added_by=request.user)
 
-    # Get latest status and duty status per driver using subqueries
-    latest_statuses = UserStatusHistory.objects.filter(user=OuterRef('pk')).order_by('-timestamp')
-    latest_duties = UserOnDutyHistory.objects.filter(user=OuterRef('pk')).order_by('-timestamp')
+    total_drivers = drivers.count()
+    online_drivers = drivers.filter(device_id__isnull=False).count()
+    on_duty_drivers = drivers.filter(on_duty=True).count()
 
-    drivers = []
+    recent_threshold = timezone.now() - timedelta(days=1)
+    recent_drivers = drivers.filter(date_joined__gte=recent_threshold).count()
 
-    for driver in drivers_queryset.annotate(
-        latest_status=Subquery(latest_statuses.values('status')[:1]),
-        latest_user_status=Subquery(latest_statuses.values('user_status')[:1]),
-        latest_duty=Subquery(latest_duties.values('status')[:1])
-    ):
-        # Get location from Redis
-        location = redis_client.geopos("drivers_locations", driver.username)
+    driver_list = []
+    for d in drivers:
+        status = "offline"
+        if d.on_duty:
+            status = "onDuty"
+        elif d.device_id:
+            status = "online"
 
-        if location and location[0]:
-            lng, lat = location[0]
+        driver_list.append({
+            "name": d.get_full_name() or d.username,
+            "status": status,
+            "onlineTime": d.date_joined.strftime('%I:%M %p'),
+            "offlineTime": "-",  # Placeholder for future logic
+        })
 
-            drivers.append({
-                "id": driver.id,
-                "name": driver.username,
-                "lat": lat,
-                "lng": lng,
-                "status": driver.latest_status or "Unknown",
-                "dutyStatus": "On Duty" if driver.latest_duty == "on" else "Off Duty"
-            })
+    context = {
+        "total_drivers": total_drivers,
+        "online_drivers": online_drivers,
+        "on_duty_drivers": on_duty_drivers,
+        "recent_drivers": recent_drivers,
+        "driver_data": driver_list,
+    }
+    return render(request, 'home/index.html', context)
 
-    drivers_json = json.dumps(drivers)
-    return render(request, 'home/index.html', {"drivers_json": drivers_json})
 
 
 @csrf_exempt
