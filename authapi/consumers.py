@@ -5,6 +5,8 @@ from .models import User
 from rest_framework.authtoken.models import Token
 from .utils import get_key_from_cookies
 import urllib.parse
+from django.utils.timezone import now
+
 from driveradmin.models import create_status_history
 from django.conf import settings
 import redis
@@ -117,7 +119,7 @@ class UserLocationConsumer(AsyncWebsocketConsumer):
                             'latitude': latitude,
                             'longitude': longitude,
                             'driver': self.user.username,
-                            'timestamp': data.get("timestamp", None)
+                            'timestamp': now().isoformat()
                         }
                     )
 
