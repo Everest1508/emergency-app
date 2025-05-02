@@ -120,6 +120,9 @@ class UserLocationConsumer(AsyncWebsocketConsumer):
                             'driver': self.user.username
                         }
                     )
+                location_data = json.dumps({'latitude': latitude, 'longitude': longitude})
+
+                redis_client.rpush(f"driver_location_history:{self.user.username}",location_data)
 
             elif self.user.user_type == "customer":
                 driver_list = redis_client.get(f"{self.user.username}_has_driver")

@@ -24,6 +24,7 @@
             const adminUsername = "{{ request.user.username }}";
             const token = "{{ token.key }}";
             const markers = {};
+            const polylines = []; // Array to store polylines for removal later
     
             const map = L.map('map').setView([19.988480, 73.770598], 11);
     
@@ -31,7 +32,7 @@
                 attribution: '&copy; OpenStreetMap contributors',
             }).addTo(map);
     
-            // Initial static markers
+            // Initial static markers for drivers
             drivers.forEach(driver => {
                 const marker = L.marker([driver.lat, driver.lng]).addTo(map);
                 marker.bindPopup(`
@@ -42,15 +43,58 @@
                     </div>
                 `);
                 markers[driver.username] = marker;
+                marker.on('click', () => {
+                    loadLocationHistory(driver.username);
+                });
             });
-    
-            console.log("Markers after initial placement:", markers);  // Log the markers object
-            console.log("Initial markers (by username):", Object.keys(markers));  // Log the keys
-    
-            // Determine the protocol dynamically based on the current page's protocol
-            const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
 
-            // WebSocket connection using the appropriate protocol (wss for HTTPS, ws for HTTP)
+            // Function to load location history for a specific driver
+            function loadLocationHistory(username) {
+                fetch(`/dash/get-location-history/${username}/`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': 'Token ' + token,
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.location_history && data.location_history.length > 0) {
+                        plotLocationHistory(data.location_history);
+                    } else {
+                        alert('No location history found.');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching location history:', error);
+                });
+            }
+
+            // Function to remove all existing polylines (paths) from the map
+            function clearPaths() {
+                polylines.forEach(polyline => map.removeLayer(polyline)); // Remove all polylines from the map
+                polylines.length = 0; // Reset the array
+            }
+
+            // Function to plot the location history on the map
+            function plotLocationHistory(locationHistory) {
+                // First, clear the existing paths
+                clearPaths();
+
+                // Prepare the latLngs for the polyline
+                const latLngs = locationHistory.map(item => [item.latitude, item.longitude]);
+
+                // Draw a new polyline (path) representing the driver's location history
+                const polyline = L.polyline(latLngs, { color: 'blue' }).addTo(map);
+
+                // Store the polyline in the polylines array for future removal
+                polylines.push(polyline);
+
+                // Adjust the map bounds to fit the polyline
+                map.fitBounds(polyline.getBounds());
+            }
+    
+            // WebSocket connection setup
+            const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
             const socket = new WebSocket(`${protocol}://${window.location.host}/ws/user/${adminUsername}/?token=${token}`);
 
             socket.onopen = () => {
@@ -59,28 +103,20 @@
     
             socket.onmessage = (e) => {
                 const data = JSON.parse(e.data);
-
-                // ✅ Log the complete data payload received
                 console.log("🔄 Full WebSocket data received:", data);
 
                 if (data.type === "admin_driver_location_update") {
                     const { latitude, longitude, driver: incomingDriver } = data;
                     console.log("📍 Location update → Driver:", incomingDriver, "| Lat:", latitude, "| Lng:", longitude);
 
-                    // Check if the incoming driver already exists in markers
+                    // Update the marker's position if it exists
                     if (markers.hasOwnProperty(incomingDriver)) {
-                        console.log("✅ Existing marker found for:", incomingDriver);
                         markers[incomingDriver].setLatLng([latitude, longitude]);
                     } else {
-                        console.warn("⚠️ No existing marker for:", incomingDriver, "→ Creating new one.");
                         const newMarker = L.marker([latitude, longitude]).addTo(map);
                         newMarker.bindPopup(`<strong>${incomingDriver}</strong><br />Live Update`);
                         markers[incomingDriver] = newMarker;
                     }
-
-                    // Log markers after update
-                    console.log("Markers (after WebSocket update):", markers);
-                    console.log("Updated markers keys:", Object.keys(markers));
                 }
             };
     

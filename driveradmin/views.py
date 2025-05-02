@@ -10,6 +10,8 @@ from .models import UserStatusHistory, UserOnDutyHistory
 from authapi.models import User
 from django.conf import settings
 from rest_framework.authtoken.models import Token
+from django.views.decorators.csrf import csrf_exempt
+from django.http import JsonResponse
 
 pool = redis.ConnectionPool.from_url(settings.REDIS_URL, decode_responses=True)
 redis_client = redis.Redis(connection_pool=pool)
@@ -102,3 +104,32 @@ def driver_view(request):
 
     drivers_json = json.dumps(drivers)
     return render(request, 'home/index.html', {"drivers_json": drivers_json})
+
+
+@csrf_exempt
+@login_required(login_url='zora_login')
+def get_location_history(request, username):
+    """
+    API to fetch the location history of a user from Redis.
+    Always returns 200 OK with empty data if no history is found.
+    """
+    try:
+        # Fetch the location history list for the user from Redis
+        location_history = redis_client.lrange(f"driver_location_history:{username}", 0, -1)
+
+        # Convert to Python dicts (if data exists)
+        if location_history:
+            location_history = [json.loads(item) for item in location_history]
+        else:
+            location_history = []
+
+        # Prepare the response data
+        response_data = {
+            "username": username,
+            "location_history": location_history
+        }
+
+        return JsonResponse(response_data, status=200)
+
+    except Exception as e:
+        return JsonResponse({"error": str(e)}, status=500)
