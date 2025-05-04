@@ -32,9 +32,6 @@ def get_key_from_cookies(scope,key):
 
 def send_verified_email_to_user(user):
     from .models import EmailGroupModel
-    if user.is_verified:
-        return {"status": "skipped", "message": f"{user.email} is already verified."}
-
     try:
         email_template = EmailGroupModel.objects.get(type="driver-verified")
     except EmailGroupModel.DoesNotExist:
