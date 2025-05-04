@@ -53,8 +53,6 @@ def send_verified_email_to_user(user):
         if email_response["status"] == "error":
             return {"status": "error", "message": f"Failed to send email to {user.email}"}
 
-        user.is_verified = True
-        user.save()
         return {"status": "success", "message": f"Verification email sent to {user.email}"}
     except Exception as e:
         return {"status": "error", "message": f"Exception while sending to {user.email}: {str(e)}"}
